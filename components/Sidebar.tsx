@@ -1,0 +1,129 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faHome,
+  faDollarSign,
+  faShieldAlt,
+  faHandHoldingDollar,
+  faHeartPulse,
+  faLaptop,
+  faUsers,
+  faSignOutAlt,
+  faBars,
+  faTimes,
+  faVault
+} from '@fortawesome/free-solid-svg-icons'
+import { createClient } from '@/lib/supabase/client'
+
+const navigationItems = [
+  { href: '/dashboard', icon: faHome, label: 'Dashboard' },
+  { href: '/dashboard/money-accounts', icon: faDollarSign, label: 'Money Accounts' },
+  { href: '/dashboard/insurance', icon: faShieldAlt, label: 'Insurance' },
+  { href: '/dashboard/liabilities', icon: faHandHoldingDollar, label: 'Liabilities' },
+  { href: '/dashboard/healthcare', icon: faHeartPulse, label: 'Healthcare' },
+  { href: '/dashboard/digital-assets', icon: faLaptop, label: 'Digital Assets' },
+  { href: '/dashboard/family', icon: faUsers, label: 'Family Tree' },
+]
+
+export default function Sidebar() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/auth/signin')
+  }
+
+  return (
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 bg-indigo-600 text-white p-3 rounded-lg shadow-lg"
+      >
+        <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} />
+      </button>
+
+      {/* Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-40
+          w-64 bg-white border-r border-gray-200
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <FontAwesomeIcon icon={faVault} className="text-white text-lg" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Family Vault</h1>
+                <p className="text-xs text-gray-500">Asset Management</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto p-4">
+            <ul className="space-y-2">
+              {navigationItems.map((item) => {
+                const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`
+                        flex items-center space-x-3 px-4 py-3 rounded-lg
+                        transition-colors duration-200
+                        ${isActive
+                          ? 'bg-indigo-50 text-indigo-600 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                        }
+                      `}
+                    >
+                      <FontAwesomeIcon icon={item.icon} className="w-5" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+
+          {/* Sign Out */}
+          <div className="p-4 border-t border-gray-200">
+            <button
+              onClick={handleSignOut}
+              className="flex items-center space-x-3 px-4 py-3 rounded-lg w-full
+                text-red-600 hover:bg-red-50 transition-colors duration-200"
+            >
+              <FontAwesomeIcon icon={faSignOutAlt} className="w-5" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
+  )
+}
+
