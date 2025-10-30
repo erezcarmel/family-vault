@@ -11,6 +11,7 @@ import {
   faHandHoldingDollar,
   faHeartPulse,
   faLaptop,
+  faFileAlt,
   faUsers,
   faSignOutAlt,
   faBars,
@@ -26,6 +27,7 @@ const navigationItems = [
   { href: '/dashboard/liabilities', icon: faHandHoldingDollar, label: 'Liabilities' },
   { href: '/dashboard/healthcare', icon: faHeartPulse, label: 'Healthcare' },
   { href: '/dashboard/digital-assets', icon: faLaptop, label: 'Digital Assets' },
+  { href: '/dashboard/documents', icon: faFileAlt, label: 'Documents' },
   { href: '/dashboard/family', icon: faUsers, label: 'Family Tree' },
 ]
 

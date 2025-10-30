@@ -10,6 +10,7 @@ import {
   faHandHoldingDollar,
   faHeartPulse,
   faLaptop,
+  faFileAlt,
   faArrowRight,
   faEdit,
   faCheck,
@@ -31,6 +32,13 @@ const assetSections = [
     icon: faShieldAlt,
     description: 'Track your life, home, and health insurance policies',
     color: 'bg-blue-500',
+  },
+  {
+    id: 'documents',
+    title: 'Documents',
+    icon: faFileAlt,
+    description: 'Upload and manage important documents',
+    color: 'bg-purple-500',
   },
   {
     id: 'liabilities',

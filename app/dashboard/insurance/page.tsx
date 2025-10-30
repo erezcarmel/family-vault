@@ -20,6 +20,7 @@ export default function Insurance() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null)
+  const [selectedFilter, setSelectedFilter] = useState<string>('all')
   const supabase = createClient()
 
   useEffect(() => {
@@ -166,47 +167,79 @@ export default function Insurance() {
       {/* Filter by Sub-Category */}
       <div className="mb-6">
         <div className="flex flex-wrap gap-2">
+          {/* All filter */}
+          <button
+            onClick={() => setSelectedFilter('all')}
+            className={`px-4 py-2 rounded-lg border transition-all ${
+              selectedFilter === 'all'
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                : 'bg-white text-gray-900 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'
+            }`}
+          >
+            <span className="font-medium">All</span>
+            <span className="ml-2 text-sm opacity-75">({assets.length})</span>
+          </button>
+
+          {/* Category filters */}
           {subCategories.map((sub) => {
             const count = assets.filter(a => a.type === sub.id).length
             return (
-              <div
+              <button
                 key={sub.id}
-                className="px-4 py-2 bg-white border border-gray-200 rounded-lg"
+                onClick={() => setSelectedFilter(sub.id)}
+                className={`px-4 py-2 rounded-lg border transition-all ${
+                  selectedFilter === sub.id
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                    : 'bg-white text-gray-900 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'
+                }`}
               >
-                <span className="font-medium text-gray-900">{sub.title}</span>
-                <span className="ml-2 text-sm text-gray-500">({count})</span>
-              </div>
+                <span className="font-medium">{sub.title}</span>
+                <span className="ml-2 text-sm opacity-75">({count})</span>
+              </button>
             )
           })}
         </div>
       </div>
 
       {/* Assets Grid */}
-      {assets.length === 0 ? (
-        <div className="text-center py-12 card">
-          <FontAwesomeIcon icon={faShieldAlt} className="text-6xl text-gray-300 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Insurance Policies Yet</h3>
-          <p className="text-gray-600 mb-6">Start by adding your first insurance policy</p>
-          <button
-            onClick={handleAddNew}
-            className="btn-primary"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add Your First Policy
-          </button>
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {assets.map((asset) => (
-            <AssetCard
-              key={asset.id}
-              asset={asset}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      )}
+      {(() => {
+        const filteredAssets = selectedFilter === 'all' 
+          ? assets 
+          : assets.filter(a => a.type === selectedFilter)
+        
+        return filteredAssets.length === 0 ? (
+          <div className="text-center py-12 card">
+            <FontAwesomeIcon icon={faShieldAlt} className="text-6xl text-gray-300 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {assets.length === 0 ? 'No Insurance Policies Yet' : 'No Policies in This Category'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {assets.length === 0 
+                ? 'Start by adding your first insurance policy'
+                : 'Try selecting a different category or add a new policy'
+              }
+            </p>
+            <button
+              onClick={handleAddNew}
+              className="btn-primary"
+            >
+              <FontAwesomeIcon icon={faPlus} className="mr-2" />
+              {assets.length === 0 ? 'Add Your First Policy' : 'Add Policy'}
+            </button>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAssets.map((asset) => (
+              <AssetCard
+                key={asset.id}
+                asset={asset}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )
+      })()}
 
       <AssetModal
         isOpen={isModalOpen}

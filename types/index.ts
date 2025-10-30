@@ -95,3 +95,15 @@ export interface AccountType {
   created_at: string
 }
 
+export interface Document {
+  id: string
+  family_id: string
+  title: string
+  description: string | null
+  file_name: string
+  file_path: string
+  file_size: number
+  file_type: string
+  created_at: string
+  updated_at: string
+}

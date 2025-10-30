@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTimes, faPlus, faTrash, faCamera, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { faTimes, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
+import DocumentScanner from './DocumentScanner'
 import type { Asset, AssetType, Provider, AccountType } from '@/types'
 
 interface CustomField {
@@ -34,9 +35,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [accountTypes, setAccountTypes] = useState<AccountType[]>([])
   const [loadingProviders, setLoadingProviders] = useState(false)
   const [loadingAccountTypes, setLoadingAccountTypes] = useState(false)
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
-  const [scanningDocument, setScanningDocument] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -116,7 +114,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setNewFieldValue('')
     setProviders([])
     setAccountTypes([])
-    setUploadedImage(null)
   }
 
   const addCustomField = () => {
@@ -137,90 +134,27 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setCustomFields(customFields.filter(field => field.name !== name))
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleDocumentDataExtracted = (data: any) => {
+    // Set main fields
+    if (data.provider_name) setProviderName(data.provider_name)
+    if (data.account_type) setAccountType(data.account_type)
+    if (data.account_number) setAccountNumber(data.account_number)
 
-    // Check if it's an image
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file')
-      return
-    }
-
-    // Convert to base64
-    const reader = new FileReader()
-    reader.onload = async (event) => {
-      const base64Image = event.target?.result as string
-      setUploadedImage(base64Image)
-
-      // Auto-scan if sub-category is selected
-      if (subCategory) {
-        await scanDocument(base64Image)
-      }
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const scanDocument = async (imageData: string) => {
-    if (!subCategory) {
-      alert('Please select a sub-category first')
-      return
-    }
-
-    setScanningDocument(true)
-
-    try {
-      const response = await fetch('/api/scan-document', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageBase64: imageData,
-          category: category,
-          type: subCategory,
-        }),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to scan document')
-      }
-
-      // Populate form with extracted data
-      if (result.data) {
-        const data = result.data
-
-        // Set main fields
-        if (data.provider_name) setProviderName(data.provider_name)
-        if (data.account_type) setAccountType(data.account_type)
-        if (data.account_number) setAccountNumber(data.account_number)
-
-        // Set custom fields (anything that's not the main fields)
-        const mainFields = ['provider_name', 'account_type', 'account_number']
-        const customFieldsData: CustomField[] = []
-        
-        Object.entries(data).forEach(([key, value]) => {
-          if (!mainFields.includes(key) && value) {
-            customFieldsData.push({
-              name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-              value: String(value)
-            })
-          }
+    // Set custom fields (anything that's not the main fields)
+    const mainFields = ['provider_name', 'account_type', 'account_number']
+    const customFieldsData: CustomField[] = []
+    
+    Object.entries(data).forEach(([key, value]) => {
+      if (!mainFields.includes(key) && value) {
+        customFieldsData.push({
+          name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          value: String(value)
         })
-
-        if (customFieldsData.length > 0) {
-          setCustomFields(customFieldsData)
-        }
-
-        alert('Document scanned successfully! Please review and edit the extracted data.')
       }
-    } catch (error: any) {
-      console.error('Error scanning document:', error)
-      alert(`Failed to scan document: ${error.message}`)
-    } finally {
-      setScanningDocument(false)
+    })
+
+    if (customFieldsData.length > 0) {
+      setCustomFields(customFieldsData)
     }
   }
 
@@ -262,8 +196,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-white/75 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
             {asset ? 'Edit Asset' : 'Add New Asset'}
@@ -278,85 +212,11 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Document Scanner Section */}
-          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-semibold text-indigo-900 flex items-center">
-                  <FontAwesomeIcon icon={faCamera} className="mr-2" />
-                  Smart Document Scanner
-                </h3>
-                <p className="text-xs text-indigo-700 mt-1">
-                  Upload a document to automatically extract information
-                </p>
-              </div>
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-
-            <div className="space-y-3">
-              {uploadedImage && (
-                <div className="relative">
-                  <img
-                    src={uploadedImage}
-                    alt="Uploaded document"
-                    className="w-full max-h-48 object-contain rounded-lg border border-indigo-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setUploadedImage(null)}
-                    className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700"
-                  >
-                    <FontAwesomeIcon icon={faTimes} className="text-xs" />
-                  </button>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={scanningDocument}
-                  className="flex-1 btn-secondary disabled:opacity-50"
-                >
-                  <FontAwesomeIcon icon={faCamera} className="mr-2" />
-                  {uploadedImage ? 'Change Document' : 'Upload Document'}
-                </button>
-
-                {uploadedImage && (
-                  <button
-                    type="button"
-                    onClick={() => scanDocument(uploadedImage)}
-                    disabled={scanningDocument || !subCategory}
-                    className="flex-1 btn-primary disabled:opacity-50"
-                  >
-                    {scanningDocument ? (
-                      <>
-                        <FontAwesomeIcon icon={faSpinner} className="mr-2 animate-spin" />
-                        Scanning...
-                      </>
-                    ) : (
-                      <>
-                        <FontAwesomeIcon icon={faCamera} className="mr-2" />
-                        Scan Document
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-
-              {!subCategory && uploadedImage && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                  Please select a sub-category first to enable document scanning
-                </p>
-              )}
-            </div>
-          </div>
+          <DocumentScanner
+            category={category}
+            subCategory={subCategory}
+            onDataExtracted={handleDocumentDataExtracted}
+          />
 
           <div className="border-t border-gray-200 pt-2"></div>
 
