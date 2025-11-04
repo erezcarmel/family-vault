@@ -17,7 +17,6 @@ export default function AssetModal({
   onSave,
   category
 }: AssetModalProps) {
-  // --- existing state and code unchanged ---
   const [providerName, setProviderName] = useState('')
   const [customProviderName, setCustomProviderName] = useState('')
   const [accountType, setAccountType] = useState('')
@@ -125,7 +124,6 @@ export default function AssetModal({
     setCustomFields(customFields.filter(field => field.name !== name))
   }
 
-  // Render modal and form fields
   if (!isOpen) return null
 
   return (
@@ -135,7 +133,6 @@ export default function AssetModal({
         <form
           onSubmit={e => {
             e.preventDefault()
-            // build asset data from fields and custom fields
             const data: any = {
               provider_name: providerName,
               account_type: accountType,
@@ -179,7 +176,7 @@ export default function AssetModal({
               className="input-field"
             />
           </div>
-          {/* Immediately render custom fields below the last standard field */}
+          {/* Editable custom fields directly below last standard field */}
           {customFields.length > 0 &&
             customFields.map((field, idx) => (
               <div className="mb-2" key={field.name}>
@@ -188,7 +185,11 @@ export default function AssetModal({
                   <input
                     type="text"
                     value={field.value}
-                    readOnly
+                    onChange={e => {
+                      const updatedFields = [...customFields]
+                      updatedFields[idx] = { ...field, value: e.target.value }
+                      setCustomFields(updatedFields)
+                    }}
                     className="input-field flex-auto"
                   />
                   <button
@@ -200,9 +201,10 @@ export default function AssetModal({
                   </button>
                 </div>
               </div>
-            ))}
+            ))
+          }
 
-          {/* Custom Fields label and add action, always below custom fields! */}
+          {/* Custom Fields label and add action, always after all custom fields */}
           <div className="mt-4">
             <div className="font-semibold text-gray-900 mb-2">Custom Fields</div>
             <div className="flex space-x-2">
