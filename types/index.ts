@@ -95,6 +95,11 @@ export interface AccountType {
   created_at: string
 }
 
+export interface CustomField {
+  name: string
+  value: string
+}
+
 export interface Document {
   id: string
   family_id: string
