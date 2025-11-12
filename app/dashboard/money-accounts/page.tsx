@@ -8,6 +8,8 @@ import AssetCard from '@/components/AssetCard'
 import AssetModal from '@/components/AssetModal'
 import type { Asset, AssetType } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 const subCategories: { id: AssetType; title: string }[] = [
   { id: 'checking_saving', title: 'Checking/Saving Account' },
   { id: 'brokerage', title: 'Brokerage Account' },

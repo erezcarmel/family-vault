@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faEnvelope, faPlus, faTrash, faUsers, faEdit, faCamera, faTimes } from '@fortawesome/free-solid-svg-icons'
 import type { FamilyMember, FamilyConnection } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 export default function FamilyTree() {
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [connections, setConnections] = useState<FamilyConnection[]>([])

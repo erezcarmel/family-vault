@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock, faVault } from '@fortawesome/free-solid-svg-icons'
 
+export const dynamic = 'force-dynamic'
+
 export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

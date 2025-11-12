@@ -18,6 +18,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import type { Family } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 const assetSections = [
   {
     id: 'money-accounts',

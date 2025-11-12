@@ -7,6 +7,8 @@ import { faPlus, faFileAlt, faDownload, faTrash, faSpinner, faEdit } from '@fort
 import UploadDocumentModal from '@/components/UploadDocumentModal'
 import type { Document } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 export default function Documents() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [familyId, setFamilyId] = useState<string | null>(null)

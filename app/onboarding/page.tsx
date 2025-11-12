@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser } from '@fortawesome/free-solid-svg-icons'
 
+export const dynamic = 'force-dynamic'
+
 export default function Onboarding() {
   const [name, setName] = useState('')
   const [familyName, setFamilyName] = useState('')

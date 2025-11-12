@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faCake, faPlus, faTrash, faArrowRight } from '@fortawesome/free-solid-svg-icons'
 
+export const dynamic = 'force-dynamic'
+
 interface FamilyMemberForm {
   name: string
   email: string
