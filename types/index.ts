@@ -54,8 +54,8 @@ export type AssetType =
 
 export interface AssetData {
   provider_name: string
-  account_type: string
-  account_number: string
+  account_type?: string
+  account_number?: string
   [key: string]: any // Allow additional custom fields
 }
 
