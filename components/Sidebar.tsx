@@ -78,7 +78,7 @@ export default function Sidebar() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Family Vault</h1>
-                <p className="text-xs text-gray-500">Asset Management</p>
+                <p className="text-xs text-gray-500">Family Asset Management</p>
               </div>
             </div>
           </div>
