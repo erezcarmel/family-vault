@@ -35,8 +35,8 @@ export default function AssetModal({
   useEffect(() => {
     if (asset) {
       setProviderName(asset.data.provider_name)
-      setAccountType(asset.data.account_type)
-      setAccountNumber(asset.data.account_number)
+      setAccountType(asset.data.account_type || '')
+      setAccountNumber(asset.data.account_number || '')
       setSubCategory(asset.type as AssetType)
       const customData = Object.entries(asset.data)
         .filter(([key]) => !['provider_name', 'account_type', 'account_number'].includes(key))
@@ -135,8 +135,9 @@ export default function AssetModal({
             e.preventDefault()
             const data: any = {
               provider_name: providerName,
-              account_type: accountType,
-              account_number: accountNumber,
+              // only include these fields if they have a value; otherwise omit
+              ...(accountType ? { account_type: accountType } : {}),
+              ...(accountNumber ? { account_number: accountNumber } : {}),
             }
             customFields.forEach(field => {
               data[field.name] = field.value

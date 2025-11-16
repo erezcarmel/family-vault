@@ -40,8 +40,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   useEffect(() => {
     if (asset) {
       setProviderName(asset.data.provider_name)
-      setAccountType(asset.data.account_type)
-      setAccountNumber(asset.data.account_number)
+      setAccountType(asset.data.account_type || '')
+      setAccountNumber(asset.data.account_number || '')
       setSubCategory(asset.type as AssetType)
       
       // Extract custom fields
@@ -172,16 +172,14 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       return
     }
 
-    if (!finalAccountType) {
-      alert('Please enter an account/policy type')
-      return
-    }
+    // account_type and account_number are now optional
 
     // Build data object
     const data: any = {
       provider_name: finalProviderName,
-      account_type: finalAccountType,
-      account_number: accountNumber,
+      // only include these fields if they have a value; otherwise omit or set undefined
+      ...(finalAccountType ? { account_type: finalAccountType } : {}),
+      ...(accountNumber ? { account_number: accountNumber } : {}),
     }
 
     // Add custom fields
@@ -295,7 +293,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Account/Policy Type *
+              Account/Policy Type
             </label>
             {subCategory && accountTypes.length > 0 ? (
               <div className="space-y-2">
@@ -308,7 +306,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                     }
                   }}
                   className="input-field"
-                  required
                 >
                   <option value="">Select account/policy type</option>
                   {accountTypes.map((type) => (
@@ -325,7 +322,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                     onChange={(e) => setCustomAccountType(e.target.value)}
                     className="input-field"
                     placeholder="Enter custom account/policy type"
-                    required
                   />
                 )}
               </div>
@@ -337,7 +333,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                 className="input-field"
                 placeholder={loadingAccountTypes ? "Loading types..." : "e.g., Checking, Life Insurance"}
                 disabled={loadingAccountTypes}
-                required
               />
             )}
             {!subCategory && (
@@ -349,7 +344,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Account Number *
+              Account Number
             </label>
             <input
               type="text"
@@ -357,7 +352,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
               onChange={(e) => setAccountNumber(e.target.value)}
               className="input-field"
               placeholder="Enter account or policy number"
-              required
             />
           </div>
 
