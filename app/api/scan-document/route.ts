@@ -10,6 +10,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { imageBase64, category, type } = body
 
+    if (!imageBase64 || !category || !type) {
+      return NextResponse.json(
+        { error: 'Missing required fields: imageBase64, category, type' },
+        { status: 400 }
+      )
+    }
+
     // Load prompt config
     const promptConfigModule = await import('../../../lib/document-scanner-prompts')
     const { documentScannerPrompts } = promptConfigModule
