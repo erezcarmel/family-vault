@@ -172,10 +172,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       return
     }
 
-    if (!finalAccountType) {
-      alert('Please enter an account/policy type')
-      return
-    }
+    // NOTE: Account/Policy Type is now optional. We no longer block submission when it's empty.
 
     // Build data object
     const data: any = {
@@ -295,7 +292,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Account/Policy Type *
+              Account/Policy Type
             </label>
             {subCategory && accountTypes.length > 0 ? (
               <div className="space-y-2">
@@ -308,7 +305,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                     }
                   }}
                   className="input-field"
-                  required
                 >
                   <option value="">Select account/policy type</option>
                   {accountTypes.map((type) => (
@@ -325,7 +321,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                     onChange={(e) => setCustomAccountType(e.target.value)}
                     className="input-field"
                     placeholder="Enter custom account/policy type"
-                    required
                   />
                 )}
               </div>
@@ -337,7 +332,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                 className="input-field"
                 placeholder={loadingAccountTypes ? "Loading types..." : "e.g., Checking, Life Insurance"}
                 disabled={loadingAccountTypes}
-                required
               />
             )}
             {!subCategory && (
@@ -432,4 +426,3 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     </div>
   )
 }
-
