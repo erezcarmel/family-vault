@@ -105,7 +105,8 @@ function extractAmountsFromLine(
 
   // Check for currency prefix amounts
   for (const symbol of CURRENCY_SYMBOLS) {
-    const escapedSymbol = symbol.replace(/[$]/g, '\\$')
+    // Escape all special regex characters
+    const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     // This pattern handles both US (1,234.56) and European (1.234,56) formats
     const pattern = new RegExp(`${escapedSymbol}\\s*(-?)\\s*([\\d]+(?:[.,]\\d{3})*(?:[.,]\\d{1,2})?)`, 'g')
     
@@ -131,6 +132,7 @@ function extractAmountsFromLine(
   }
 
   // Check for plain amounts (must have decimal with 2 digits)
+  // Note: Lookbehind assertions require Node.js 10+ or modern browsers (ES2018+)
   const plainPattern = /(?<![0-9$€£¥₹\-])([\d,]+\.\d{2})(?![0-9])/g
   while ((match = plainPattern.exec(line)) !== null) {
     const localPosition = match.index
@@ -274,7 +276,11 @@ function extractDatesFromLine(
         format = 'DD/MM/YYYY'
       }
 
-      if (isValidDate(date, year, format === 'MM/DD/YYYY' ? part1 - 1 : part2 - 1, format === 'MM/DD/YYYY' ? part2 : part1)) {
+      // Extract month and day based on detected format for validation
+      const month = format === 'MM/DD/YYYY' ? part1 - 1 : part2 - 1
+      const day = format === 'MM/DD/YYYY' ? part2 : part1
+      
+      if (isValidDate(date, year, month, day)) {
         dates.push({
           raw: match[0],
           date,
@@ -396,9 +402,14 @@ export function findNearbyBalanceKeyword(
       const lineStart = lines.slice(0, i).reduce((acc, l) => acc + l.length + 1, 0)
       const lineEnd = lineStart + lines[i].length
       
-      const keywordIndex = lowerText.indexOf(keywordLower)
-      if (keywordIndex !== -1 && keywordIndex >= lineStart - config.maxCharDistance && keywordIndex <= lineEnd + config.maxCharDistance) {
-        return keyword
+      // Find all occurrences of the keyword and check if any is within range
+      let searchIndex = 0
+      let keywordIndex: number
+      while ((keywordIndex = lowerText.indexOf(keywordLower, searchIndex)) !== -1) {
+        if (keywordIndex >= lineStart - config.maxCharDistance && keywordIndex <= lineEnd + config.maxCharDistance) {
+          return keyword
+        }
+        searchIndex = keywordIndex + 1
       }
     }
   }
