@@ -11,6 +11,12 @@ import {
   getInferenceConfig
 } from '@/lib/config/ocr/subcategory-mapping'
 
+// Scoring constants for confidence calculation
+const MATCH_COUNT_WEIGHT = 0.3    // Weight for match count (logarithmic contribution)
+const SPECIFICITY_WEIGHT = 0.4   // Weight for match length/specificity
+const MAX_SPECIFICITY_LENGTH = 20 // Expected max length for specificity normalization
+const MAX_BASE_SCORE = 0.7       // Cap on base score before weight multiplier
+
 /**
  * A match candidate with score and matched text.
  */
@@ -96,9 +102,9 @@ function findPatternMatches(
       if (found) {
         matches.push(...found)
       }
-    } catch (e) {
+    } catch (error) {
       // Skip invalid patterns
-      console.warn(`Invalid regex pattern: ${pattern}`, e)
+      console.warn(`Invalid regex pattern: ${pattern}`, error)
     }
   }
 
@@ -130,12 +136,12 @@ function calculateScore(
   // Find the longest match (specificity indicator)
   const longestMatch = matches.reduce((a, b) => (a.length > b.length ? a : b), '')
 
-  // Base score: each match contributes
+  // Base score calculation:
   // - matchCount contributes logarithmically (diminishing returns)
   // - longestMatch contributes linearly (longer = more specific)
-  const matchCountScore = Math.log2(matches.length + 1) * 0.3
-  const specificityScore = (longestMatch.length / 20) * 0.4 // Normalize to ~20 char max
-  const baseScore = Math.min(matchCountScore + specificityScore, 0.7)
+  const matchCountScore = Math.log2(matches.length + 1) * MATCH_COUNT_WEIGHT
+  const specificityScore = (longestMatch.length / MAX_SPECIFICITY_LENGTH) * SPECIFICITY_WEIGHT
+  const baseScore = Math.min(matchCountScore + specificityScore, MAX_BASE_SCORE)
 
   // Apply weight multiplier
   const totalScore = Math.min(baseScore * mapping.weight, 1.0)

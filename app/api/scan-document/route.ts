@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Run subcategory inference on extracted text content
-    // Collect all text fields from extracted data for inference
     const textForInference = extractTextForInference(extractedData)
     let subcategoryInference: SubcategoryInferenceResult | undefined
     
@@ -109,16 +108,23 @@ export async function POST(request: NextRequest) {
 /**
  * Extract text content from the extracted data for subcategory inference.
  * Combines relevant text fields into a single string for pattern matching.
+ * @param data - The data object to extract text from
+ * @param depth - Current recursion depth (limited to prevent deep recursion)
  */
-function extractTextForInference(data: Record<string, unknown>): string {
+const MAX_EXTRACTION_DEPTH = 5
+
+function extractTextForInference(data: Record<string, unknown>, depth = 0): string {
+  if (depth >= MAX_EXTRACTION_DEPTH) {
+    return ''
+  }
+  
   const textParts: string[] = []
   
   for (const [, value] of Object.entries(data)) {
     if (typeof value === 'string') {
       textParts.push(value)
     } else if (typeof value === 'object' && value !== null) {
-      // Recursively extract text from nested objects
-      const nestedText = extractTextForInference(value as Record<string, unknown>)
+      const nestedText = extractTextForInference(value as Record<string, unknown>, depth + 1)
       if (nestedText) {
         textParts.push(nestedText)
       }

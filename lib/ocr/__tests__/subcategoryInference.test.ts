@@ -8,8 +8,11 @@
  * - Integration tests for ATM withdrawal, grocery, and vendor-based mapping
  */
 
-import { inferSubcategory, inferSubcategoryFromMultipleTexts, SubcategoryInferenceResult } from '../subcategoryInference'
-import { SubcategoryMapping, SubcategoryInferenceConfig, defaultSubcategoryMappings } from '@/lib/config/ocr/subcategory-mapping'
+import { inferSubcategory, inferSubcategoryFromMultipleTexts } from '../subcategoryInference'
+import { SubcategoryMapping, SubcategoryInferenceConfig } from '@/lib/config/ocr/subcategory-mapping'
+
+// Test constants
+const STRESS_TEST_REPEAT_COUNT = 1000
 
 describe('Subcategory Inference Module', () => {
   describe('Basic Pattern Matching', () => {
@@ -316,7 +319,7 @@ describe('Subcategory Inference Module', () => {
     })
 
     it('should handle very long text', () => {
-      const longText = 'ATM '.repeat(1000) + 'withdrawal'
+      const longText = 'ATM '.repeat(STRESS_TEST_REPEAT_COUNT) + 'withdrawal'
       const result = inferSubcategory(longText)
       expect(result.inferredSubcategory).toBe('cash_withdrawal')
     })
