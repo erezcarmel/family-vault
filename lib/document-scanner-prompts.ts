@@ -13,7 +13,7 @@ export const documentScannerPrompts: DocumentScannerPrompt[] = [
     systemPrompt: `You are analyzing a bank statement or account document. Extract the following information:
 - Provider Name: The name of the bank or financial institution
 - Account Type: Type of account (Checking, Savings, Money Market, etc.)
-- Account Number: The account number (last 4 digits if partially hidden)
+- Account Number: The COMPLETE account number with all digits. Remove any spaces, dashes, or other separators from the account number. If partially hidden, include all visible digits plus any masked portions (e.g., ****1234).
 - Additional fields like: balance, routing number, interest rate, account holder name
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
@@ -27,7 +27,7 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
     systemPrompt: `You are analyzing a brokerage account statement. Extract the following information:
 - Provider Name: The name of the brokerage firm
 - Account Type: Type of account (Individual, Joint, Margin, Cash, etc.)
-- Account Number: The account number
+- Account Number: The COMPLETE account number with all digits. Remove any spaces, dashes, or other separators from the account number.
 - Additional fields like: total value, cash balance, account holder name
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
@@ -41,7 +41,7 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
     systemPrompt: `You are analyzing a retirement account statement. Extract the following information:
 - Provider Name: The name of the retirement plan provider
 - Account Type: Type of account (401k, IRA, Roth IRA, etc.)
-- Account Number: The account number
+- Account Number: The COMPLETE account number with all digits. Remove any spaces, dashes, or other separators from the account number.
 - Additional fields like: total balance, vested balance, employer, contribution rate
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
@@ -55,7 +55,7 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
     systemPrompt: `You are analyzing a life insurance policy document. Extract the following information:
 - Provider Name: The name of the insurance company
 - Account Type: Type of policy (Term Life, Whole Life, Universal Life, etc.)
-- Account Number: The policy number
+- Account Number: The COMPLETE policy number with all characters. Remove any spaces, dashes, or other separators from the policy number.
 - Additional fields like: coverage amount, premium amount, beneficiary, policy start date
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
@@ -69,7 +69,7 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
     systemPrompt: `You are analyzing a home insurance policy document. Extract the following information:
 - Provider Name: The name of the insurance company
 - Account Type: Type of policy (Homeowners, Renters, Condo, etc.)
-- Account Number: The policy number
+- Account Number: The COMPLETE policy number with all characters. Remove any spaces, dashes, or other separators from the policy number.
 - Additional fields like: coverage amount, deductible, premium amount, property address
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
@@ -83,7 +83,7 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
     systemPrompt: `You are analyzing a health insurance card or policy document. Extract the following information:
 - Provider Name: The name of the insurance company
 - Account Type: Type of plan (HMO, PPO, EPO, etc.)
-- Account Number: The member ID or policy number
+- Account Number: The COMPLETE member ID or policy number with all characters. Remove any spaces, dashes, or other separators from the ID/number.
 - Additional fields like: group number, copay amounts, deductible, out-of-pocket max
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
