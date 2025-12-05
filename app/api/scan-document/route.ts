@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
 
         // Helper: find candidate sequences in the raw assistant content (to recover spaced/dashed OCR)
         const findLongestDigitCandidate = (text: string) => {
-          // Match digit sequences that may contain spaces or dashes, at least 5 digit-like characters when joined
-          const matches = text.match(/(?:\d[ \-\/]*){5,}/g) || []
+          // Match digit sequences that may contain spaces or dashes, ensuring at least 5 actual digits
+          const matches = text.match(/\d(?:[ \-\/]*\d){4,}/g) || []
           const candidates = matches
             .map(m => m.replace(/\D/g, '')) // strip non-digits
             .filter(s => s.length > 0)
