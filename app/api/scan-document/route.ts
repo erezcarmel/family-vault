@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { getPromptForAsset } from '@/lib/document-scanner-prompts'
+import { inferSubcategory, SubcategoryInferenceResult } from '@/lib/ocr/subcategoryInference'
 
 export async function POST(request: NextRequest) {
   // Initialize OpenAI client inside the function to avoid build-time errors
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
       // Remove markdown code blocks if present
       const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
       extractedData = JSON.parse(cleanContent)
-    } catch (parseError) {
+    } catch {
       console.error('Failed to parse OpenAI response:', content)
       return NextResponse.json(
         { error: 'Failed to parse extracted data', rawResponse: content },
@@ -79,18 +80,57 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Run subcategory inference on extracted text content
+    const textForInference = extractTextForInference(extractedData)
+    let subcategoryInference: SubcategoryInferenceResult | undefined
+    
+    if (textForInference) {
+      subcategoryInference = inferSubcategory(textForInference)
+    }
+
     return NextResponse.json({
       success: true,
       data: extractedData,
+      subcategoryInference,
       usage: response.usage
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error scanning document:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to scan document'
     return NextResponse.json(
-      { error: error.message || 'Failed to scan document' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
+}
+
+/**
+ * Extract text content from the extracted data for subcategory inference.
+ * Combines relevant text fields into a single string for pattern matching.
+ * @param data - The data object to extract text from
+ * @param depth - Current recursion depth (limited to prevent deep recursion)
+ */
+const MAX_EXTRACTION_DEPTH = 5
+
+function extractTextForInference(data: Record<string, unknown>, depth = 0): string {
+  if (depth >= MAX_EXTRACTION_DEPTH) {
+    return ''
+  }
+  
+  const textParts: string[] = []
+  
+  for (const [, value] of Object.entries(data)) {
+    if (typeof value === 'string') {
+      textParts.push(value)
+    } else if (typeof value === 'object' && value !== null) {
+      const nestedText = extractTextForInference(value as Record<string, unknown>, depth + 1)
+      if (nestedText) {
+        textParts.push(nestedText)
+      }
+    }
+  }
+  
+  return textParts.join(' ')
 }
 
