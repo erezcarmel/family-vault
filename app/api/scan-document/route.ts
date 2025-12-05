@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { getPromptForAsset } from '@/lib/document-scanner-prompts'
 
 export async function POST(request: NextRequest) {
   // Initialize OpenAI client inside the function to avoid build-time errors
@@ -11,26 +10,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { imageBase64, category, type } = body
 
-    if (!imageBase64 || !category || !type) {
-      return NextResponse.json(
-        { error: 'Missing required fields: imageBase64, category, type' },
-        { status: 400 }
-      )
-    }
+    // Load prompt config
+    const promptConfigModule = await import('../../../lib/document-scanner-prompts')
+    const { documentScannerPrompts } = promptConfigModule
+    const promptConfig = documentScannerPrompts.find(
+      p => p.category === category && p.type === type
+    ) || documentScannerPrompts[0]
 
-    // Get the appropriate prompt for this asset type
-    const promptConfig = getPromptForAsset(category, type)
-    
-    if (!promptConfig) {
-      return NextResponse.json(
-        { error: 'No prompt configuration found for this asset type' },
-        { status: 400 }
-      )
-    }
-
-    // Call OpenAI Vision API
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -53,7 +41,7 @@ export async function POST(request: NextRequest) {
         }
       ],
       max_tokens: 1000,
-      temperature: 0.1, // Low temperature for more consistent extraction
+      temperature: 0.1,
     })
 
     const content = response.choices[0]?.message?.content
@@ -79,6 +67,61 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // --- New: Normalize and try to recover full account numbers ---
+    try {
+      if (extractedData && extractedData.account_number) {
+        const original = String(extractedData.account_number)
+        const digitsOnly = original.replace(/\D/g, '') // remove non-digits
+
+        // Helper: find candidate sequences in the raw assistant content (to recover spaced/dashed OCR)
+        const findLongestDigitCandidate = (text: string) => {
+          // Match digit sequences that may contain spaces or dashes, at least 5 digit-like characters when joined
+          const matches = text.match(/(?:\d[ \-\/]*){5,}/g) || []
+          const candidates = matches
+            .map(m => m.replace(/\D/g, '')) // strip non-digits
+            .filter(s => s.length > 0)
+          if (candidates.length === 0) return ''
+          return candidates.reduce((a, b) => (a.length >= b.length ? a : b), '')
+        }
+
+        let finalAccount = digitsOnly
+
+        // If the extracted digits are suspiciously short (e.g., only 4 digits), try to recover a longer one from the assistant response
+        if ((finalAccount.length <= 4)) {
+          const candidateFromContent = findLongestDigitCandidate(content || '')
+          if (candidateFromContent && candidateFromContent.length > finalAccount.length) {
+            finalAccount = candidateFromContent
+            console.info(`Recovered longer account_number from assistant content: ${finalAccount}`)
+          } else {
+            // also try scanning the full JSON text in case assistant put the number elsewhere
+            const candidateFromClean = findLongestDigitCandidate(JSON.stringify(extractedData))
+            if (candidateFromClean && candidateFromClean.length > finalAccount.length) {
+              finalAccount = candidateFromClean
+              console.info(`Recovered longer account_number from parsed JSON: ${finalAccount}`)
+            }
+          }
+        }
+
+        // Always store account_number as contiguous digits (remove spaces/dashes)
+        if (finalAccount !== digitsOnly) {
+          console.info(`Normalized account_number from "${original}" -> "${finalAccount}"`)
+        } else if (finalAccount !== original) {
+          console.info(`Stripped non-digits from account_number "${original}" -> "${finalAccount}"`)
+        }
+
+        // If we ended up with empty, leave the original value untouched (so nothing destructive)
+        if (finalAccount && finalAccount.length > 0) {
+          extractedData.account_number = finalAccount
+        } else {
+          // fallback: keep original as-is
+          extractedData.account_number = original
+        }
+      }
+    } catch (normalizeError) {
+      console.error('Error normalizing account_number:', normalizeError)
+      // don't fail the whole request for normalization errors
+    }
+
     return NextResponse.json({
       success: true,
       data: extractedData,
@@ -93,4 +136,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
