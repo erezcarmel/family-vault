@@ -110,11 +110,7 @@ export default function Dashboard() {
   const loadStatistics = async (familyId: string) => {
     try {
       // Load all statistics in parallel for better performance
-      const [
-        { count: membersCount },
-        { count: activeAccounts },
-        { count: totalAssets }
-      ] = await Promise.all([
+      const results = await Promise.all([
         // Load family members count
         supabase
           .from('family_members')
@@ -135,9 +131,9 @@ export default function Dashboard() {
           .eq('family_id', familyId)
       ])
       
-      setFamilyMembersCount(membersCount || 0)
-      setActiveAccountsCount(activeAccounts || 0)
-      setTotalAssetsCount(totalAssets || 0)
+      setFamilyMembersCount(results[0]?.count || 0)
+      setActiveAccountsCount(results[1]?.count || 0)
+      setTotalAssetsCount(results[2]?.count || 0)
     } catch (error) {
       console.error('Error loading statistics:', error)
     }
