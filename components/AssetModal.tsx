@@ -48,6 +48,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [password, setPassword] = useState('')
   const [passwordEnabled, setPasswordEnabled] = useState(false)
   const [recoveryEmail, setRecoveryEmail] = useState('')
+  const [notes, setNotes] = useState('')
   
   const supabase = createClient()
 
@@ -72,12 +73,13 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         setPasswordEnabled(true)
       }
       if (asset.data.recovery_email) setRecoveryEmail(asset.data.recovery_email)
+      if (asset.data.notes) setNotes(asset.data.notes)
       
       // Extract custom fields (excluding standard fields)
       const standardFields = ['provider_name', 'account_type', 'account_number', 
                               'loan_amount', 'interest_rate', 'loan_term', 
                               'monthly_payment', 'term_length',
-                              'email', 'password', 'recovery_email']
+                              'email', 'password', 'recovery_email', 'notes']
       const customData = Object.entries(asset.data)
         .filter(([key]) => !standardFields.includes(key))
         .map(([name, value]) => ({ name, value: String(value) }))
@@ -156,6 +158,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setPassword('')
     setPasswordEnabled(false)
     setRecoveryEmail('')
+    setNotes('')
   }
 
   const addCustomField = () => {
@@ -209,15 +212,15 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     const finalProviderName = providerName === '__custom__' ? customProviderName : providerName
     const finalAccountType = accountType === '__custom__' ? customAccountType : accountType
 
-    if (!finalProviderName) {
-      alert('Please enter a provider name')
-      return
-    }
-
     // Validation for email account-specific fields
     if (category === 'digital_assets' && subCategory === 'email_accounts') {
       if (!email) {
         alert('Please enter an email address')
+        return
+      }
+    } else {
+      if (!finalProviderName) {
+        alert('Please enter a provider name')
         return
       }
     }
@@ -227,32 +230,34 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     // NOTE: Account/Policy Type is now optional for non-liability categories
 
     // Build data object
-    const data: Record<string, unknown> = {
-      provider_name: finalProviderName,
-      account_type: finalAccountType,
-      account_number: accountNumber,
-    }
+    const data: Record<string, unknown> = {}
     
-    // Add liability-specific fields
-    if (category === 'liabilities') {
-      if (loanAmount) data.loan_amount = loanAmount
-      if (interestRate) data.interest_rate = interestRate
-      if (loanTerm) data.loan_term = loanTerm
-      if (monthlyPayment) data.monthly_payment = monthlyPayment
-      if (termLength) data.term_length = termLength
-    }
-
-    // Add email account-specific fields
+    // For email accounts, only include email-specific fields
     if (category === 'digital_assets' && subCategory === 'email_accounts') {
       if (email) data.email = email
       if (passwordEnabled && password) data.password = password
       if (recoveryEmail) data.recovery_email = recoveryEmail
-    }
+      if (notes) data.notes = notes
+    } else {
+      // For other categories, include standard fields
+      data.provider_name = finalProviderName
+      data.account_type = finalAccountType
+      data.account_number = accountNumber
+      
+      // Add liability-specific fields
+      if (category === 'liabilities') {
+        if (loanAmount) data.loan_amount = loanAmount
+        if (interestRate) data.interest_rate = interestRate
+        if (loanTerm) data.loan_term = loanTerm
+        if (monthlyPayment) data.monthly_payment = monthlyPayment
+        if (termLength) data.term_length = termLength
+      }
 
-    // Add custom fields
-    customFields.forEach(field => {
-      data[field.name] = field.value
-    })
+      // Add custom fields
+      customFields.forEach(field => {
+        data[field.name] = field.value
+      })
+    }
 
     onSave(subCategory, data)
     resetForm()
@@ -277,13 +282,16 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Document Scanner Section */}
-          <DocumentScanner
-            category={category}
-            subCategory={subCategory}
-            onDataExtracted={handleDocumentDataExtracted}
-          />
-
-          <div className="border-t border-gray-200 pt-2"></div>
+          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+            <>
+              <DocumentScanner
+                category={category}
+                subCategory={subCategory}
+                onDataExtracted={handleDocumentDataExtracted}
+              />
+              <div className="border-t border-gray-200 pt-2"></div>
+            </>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -304,62 +312,64 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Provider Name *
-            </label>
-            {subCategory && providers.length > 0 ? (
-              <div className="space-y-2">
-                <select
-                  value={providerName}
-                  onChange={(e) => {
-                    setProviderName(e.target.value)
-                    if (e.target.value !== '__custom__') {
-                      setCustomProviderName('')
-                    }
-                  }}
-                  className="input-field"
-                  required
-                >
-                  <option value="">Select a provider</option>
-                  {providers.map((provider) => (
-                    <option key={provider.id} value={provider.name}>
-                      {provider.name}
-                    </option>
-                  ))}
-                  <option value="__custom__">Other (Enter manually)</option>
-                </select>
-                {providerName === '__custom__' && (
-                  <input
-                    type="text"
-                    value={customProviderName}
-                    onChange={(e) => setCustomProviderName(e.target.value)}
+          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Provider Name *
+              </label>
+              {subCategory && providers.length > 0 ? (
+                <div className="space-y-2">
+                  <select
+                    value={providerName}
+                    onChange={(e) => {
+                      setProviderName(e.target.value)
+                      if (e.target.value !== '__custom__') {
+                        setCustomProviderName('')
+                      }
+                    }}
                     className="input-field"
-                    placeholder="Enter provider name"
                     required
-                  />
-                )}
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={providerName}
-                onChange={(e) => setProviderName(e.target.value)}
-                className="input-field"
-                placeholder={loadingProviders ? "Loading providers..." : "e.g., Bank of America, State Farm"}
-                disabled={loadingProviders}
-                required
-              />
-            )}
-            {!subCategory && (
-              <p className="text-xs text-gray-500 mt-1">
-                Select a sub-category first to see provider options
-              </p>
-            )}
-          </div>
+                  >
+                    <option value="">Select a provider</option>
+                    {providers.map((provider) => (
+                      <option key={provider.id} value={provider.name}>
+                        {provider.name}
+                      </option>
+                    ))}
+                    <option value="__custom__">Other (Enter manually)</option>
+                  </select>
+                  {providerName === '__custom__' && (
+                    <input
+                      type="text"
+                      value={customProviderName}
+                      onChange={(e) => setCustomProviderName(e.target.value)}
+                      className="input-field"
+                      placeholder="Enter provider name"
+                      required
+                    />
+                  )}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={providerName}
+                  onChange={(e) => setProviderName(e.target.value)}
+                  className="input-field"
+                  placeholder={loadingProviders ? "Loading providers..." : "e.g., Bank of America, State Farm"}
+                  disabled={loadingProviders}
+                  required
+                />
+              )}
+              {!subCategory && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Select a sub-category first to see provider options
+                </p>
+              )}
+            </div>
+          )}
 
-          {/* Hide Account/Policy Type field for liabilities */}
-          {category !== 'liabilities' && (
+          {/* Hide Account/Policy Type field for liabilities and email accounts */}
+          {category !== 'liabilities' && !(category === 'digital_assets' && subCategory === 'email_accounts') && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account/Policy Type
@@ -412,19 +422,21 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Account Number {category !== 'digital_assets' && '*'}
-            </label>
-            <input
-              type="text"
-              value={accountNumber}
-              onChange={(e) => setAccountNumber(e.target.value)}
-              className="input-field"
-              placeholder="Enter account or policy number"
-              required={category !== 'digital_assets'}
-            />
-          </div>
+          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Account Number {category !== 'digital_assets' && '*'}
+              </label>
+              <input
+                type="text"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                className="input-field"
+                placeholder="Enter account or policy number"
+                required={category !== 'digital_assets'}
+              />
+            </div>
+          )}
 
           {/* Liability-specific fields */}
           {category === 'liabilities' && subCategory && (
@@ -578,59 +590,74 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                   Account owners can reset their password via the recovery email when needed.
                 </p>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="input-field"
+                  placeholder="Enter any additional notes about this email account"
+                  rows={4}
+                />
+              </div>
             </>
           )}
 
           {/* Custom Fields */}
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
-            
-            {customFields.length > 0 && (
-              <div className="space-y-2 mb-4">
-                {customFields.map((field, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                    <div className="flex-1">
-                      <span className="text-sm font-medium text-gray-700">{field.name}:</span>
-                      <span className="text-sm text-gray-900 ml-2">{field.value}</span>
+          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
+              
+              {customFields.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {customFields.map((field, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-700">{field.name}:</span>
+                        <span className="text-sm text-gray-900 ml-2">{field.value}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeCustomField(field.name)}
+                        className="text-red-600 hover:text-red-700 ml-2"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeCustomField(field.name)}
-                      className="text-red-600 hover:text-red-700 ml-2"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={newFieldName}
-                onChange={(e) => setNewFieldName(e.target.value)}
-                className="input-field"
-                placeholder="Field name"
-              />
-              <input
-                type="text"
-                value={newFieldValue}
-                onChange={(e) => setNewFieldValue(e.target.value)}
-                className="input-field"
-                placeholder="Field value"
-              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={newFieldName}
+                  onChange={(e) => setNewFieldName(e.target.value)}
+                  className="input-field"
+                  placeholder="Field name"
+                />
+                <input
+                  type="text"
+                  value={newFieldValue}
+                  onChange={(e) => setNewFieldValue(e.target.value)}
+                  className="input-field"
+                  placeholder="Field value"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={addCustomField}
+                disabled={!newFieldName || !newFieldValue}
+                className="mt-2 btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                Add Custom Field
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={addCustomField}
-              disabled={!newFieldName || !newFieldValue}
-              className="mt-2 btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FontAwesomeIcon icon={faPlus} className="mr-2" />
-              Add Custom Field
-            </button>
-          </div>
+          )}
 
           <div className="flex space-x-3 pt-6 border-t border-gray-200">
             <button
