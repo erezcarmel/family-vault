@@ -43,6 +43,12 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [monthlyPayment, setMonthlyPayment] = useState('')
   const [termLength, setTermLength] = useState('')
   
+  // Email account-specific fields
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordEnabled, setPasswordEnabled] = useState(false)
+  const [recoveryEmail, setRecoveryEmail] = useState('')
+  
   const supabase = createClient()
 
   useEffect(() => {
@@ -59,10 +65,19 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (asset.data.monthly_payment) setMonthlyPayment(asset.data.monthly_payment)
       if (asset.data.term_length) setTermLength(asset.data.term_length)
       
+      // Set email account-specific fields if they exist
+      if (asset.data.email) setEmail(asset.data.email)
+      if (asset.data.password) {
+        setPassword(asset.data.password)
+        setPasswordEnabled(true)
+      }
+      if (asset.data.recovery_email) setRecoveryEmail(asset.data.recovery_email)
+      
       // Extract custom fields (excluding standard fields)
       const standardFields = ['provider_name', 'account_type', 'account_number', 
                               'loan_amount', 'interest_rate', 'loan_term', 
-                              'monthly_payment', 'term_length']
+                              'monthly_payment', 'term_length',
+                              'email', 'password', 'recovery_email']
       const customData = Object.entries(asset.data)
         .filter(([key]) => !standardFields.includes(key))
         .map(([name, value]) => ({ name, value: String(value) }))
@@ -137,6 +152,10 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setLoanTerm('')
     setMonthlyPayment('')
     setTermLength('')
+    setEmail('')
+    setPassword('')
+    setPasswordEnabled(false)
+    setRecoveryEmail('')
   }
 
   const addCustomField = () => {
@@ -195,6 +214,14 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       return
     }
 
+    // Validation for email account-specific fields
+    if (category === 'digital_assets' && subCategory === 'email_accounts') {
+      if (!email) {
+        alert('Please enter an email address')
+        return
+      }
+    }
+
     // No validation for liability-specific fields - all are optional
 
     // NOTE: Account/Policy Type is now optional for non-liability categories
@@ -213,6 +240,13 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (loanTerm) data.loan_term = loanTerm
       if (monthlyPayment) data.monthly_payment = monthlyPayment
       if (termLength) data.term_length = termLength
+    }
+
+    // Add email account-specific fields
+    if (category === 'digital_assets' && subCategory === 'email_accounts') {
+      if (email) data.email = email
+      if (passwordEnabled && password) data.password = password
+      if (recoveryEmail) data.recovery_email = recoveryEmail
     }
 
     // Add custom fields
@@ -380,7 +414,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Account Number *
+              Account Number {category !== 'digital_assets' && '*'}
             </label>
             <input
               type="text"
@@ -388,7 +422,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
               onChange={(e) => setAccountNumber(e.target.value)}
               className="input-field"
               placeholder="Enter account or policy number"
-              required
+              required={category !== 'digital_assets'}
             />
           </div>
 
@@ -465,6 +499,85 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                   />
                 </div>
               )}
+            </>
+          )}
+
+          {/* Email account-specific fields */}
+          {category === 'digital_assets' && subCategory === 'email_accounts' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., user@example.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="enable-password"
+                      checked={passwordEnabled}
+                      onChange={(e) => {
+                        setPasswordEnabled(e.target.checked)
+                        if (!e.target.checked) {
+                          setPassword('')
+                        }
+                      }}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="enable-password" className="ml-2 text-sm text-gray-700">
+                      Enable password field
+                    </label>
+                  </div>
+                  {passwordEnabled && (
+                    <>
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-sm text-yellow-800">
+                          ⚠️ <strong>Warning:</strong> Saving passwords in the system is not recommended for security reasons. 
+                          Consider using a dedicated password manager instead.
+                        </p>
+                      </div>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="input-field"
+                        placeholder="Enter password (not recommended)"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Recovery Email
+                </label>
+                <input
+                  type="email"
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., recovery@example.com"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  <strong>Recovery email</strong> is an alternate email address linked to this account for password recovery. 
+                  By documenting this instead of the password, you can share access without revealing sensitive credentials. 
+                  Account owners can reset their password via the recovery email when needed.
+                </p>
+              </div>
             </>
           )}
 
