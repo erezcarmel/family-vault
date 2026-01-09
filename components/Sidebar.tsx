@@ -39,6 +39,7 @@ const navigationItems = [
 export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [familyMemberCount, setFamilyMemberCount] = useState<number>(0)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -51,6 +52,16 @@ export default function Sidebar() {
           const role = await getUserRole(supabase, familyId)
           console.log('Sidebar - Family ID:', familyId, 'Role:', role)
           setUserRole(role)
+          
+          // Load family member count
+          const { count, error } = await supabase
+            .from('family_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('family_id', familyId)
+          
+          if (!error && count !== null) {
+            setFamilyMemberCount(count)
+          }
         } else {
           console.log('Sidebar - No family ID found')
         }
@@ -59,7 +70,7 @@ export default function Sidebar() {
       }
     }
     loadUserRole()
-  }, [supabase])
+  }, [supabase, pathname])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -129,6 +140,11 @@ export default function Sidebar() {
                     >
                       <FontAwesomeIcon icon={item.icon} className="w-5" />
                       <span>{item.label}</span>
+                      {item.href === '/dashboard/family' && familyMemberCount > 0 && (
+                        <span className="ml-auto bg-indigo-100 text-indigo-600 px-2 py-1 rounded-full text-xs font-semibold">
+                          {familyMemberCount}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 )
