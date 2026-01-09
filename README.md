@@ -8,6 +8,7 @@ A modern, secure web application for managing your family's assets, insurance po
 - 👥 **Family Tree Management** - Track family members with photos and relationships
 - 💰 **Money Accounts** - Manage checking, savings, brokerage, and retirement accounts
 - 🛡️ **Insurance Tracking** - Life, home, and health insurance policies
+- 💳 **Liabilities Management** - Track mortgages and loans
 - 📄 **AI Document Scanning** - Extract data from documents using OpenAI
 - 📸 **Image Storage** - Upload family member photos to Supabase Storage
 - 📱 **Responsive Design** - Works seamlessly on desktop and mobile
@@ -65,6 +66,8 @@ Go to your Supabase project's SQL Editor and run all migration files in order:
 - `supabase/migrations/004_add_family_name.sql`
 - `supabase/migrations/005_add_family_connections.sql`
 - `supabase/migrations/006_add_member_images.sql`
+- `supabase/migrations/007_add_documents.sql`
+- `supabase/migrations/008_add_liabilities_data.sql`
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions.
 
@@ -117,6 +120,7 @@ family-vault/
 │   ├── dashboard/               # Main dashboard
 │   │   ├── money-accounts/      # Money accounts management
 │   │   ├── insurance/           # Insurance policies management
+│   │   ├── liabilities/         # Liabilities (mortgages & loans) management
 │   │   └── family/              # Family tree management
 │   ├── onboarding/              # Onboarding flow
 │   │   └── family-tree/         # Family tree setup
@@ -160,6 +164,7 @@ family-vault/
 - ✅ Family tree management
 - ✅ Money accounts tracking
 - ✅ Insurance policies tracking
+- ✅ Liabilities management (mortgages and loans)
 - ✅ Custom fields for assets
 - ✅ Responsive design
 
@@ -169,9 +174,9 @@ family-vault/
 - ✅ Family member relationship tracking
 - ✅ Editable family name
 - ✅ Pre-configured providers and account types
+- ✅ Liability-specific fields with validation
 
 ### Coming Soon
-- 🔜 Liabilities management
 - 🔜 Healthcare records
 - 🔜 Digital assets tracking
 - 🔜 Export/import data

@@ -14,10 +14,21 @@ interface AssetCardProps {
 export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  // Get custom fields (all fields except the main ones)
+  // Get custom fields (all fields except the main ones and liability-specific ones)
   const customFields = Object.entries(asset.data).filter(
-    ([key]) => !['provider_name', 'account_type', 'account_number'].includes(key)
+    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length'].includes(key)
   )
+  
+  // Check if this is a liability
+  const isLiability = asset.category === 'liabilities'
+  const liabilityFields = []
+  if (isLiability) {
+    if (asset.data.loan_amount) liabilityFields.push(['Loan Amount', asset.data.loan_amount])
+    if (asset.data.interest_rate) liabilityFields.push(['Interest Rate', asset.data.interest_rate])
+    if (asset.data.loan_term) liabilityFields.push(['Loan Term', asset.data.loan_term])
+    if (asset.data.monthly_payment) liabilityFields.push(['Monthly Payment', asset.data.monthly_payment])
+    if (asset.data.term_length) liabilityFields.push(['Term Length', asset.data.term_length])
+  }
 
   return (
     <div className="card hover:shadow-lg transition-shadow">
@@ -26,6 +37,12 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
           <h3 className="text-lg font-semibold text-gray-900">{asset.data.provider_name}</h3>
           <p className="text-sm text-gray-600 mt-1">{asset.data.account_type}</p>
           <p className="text-xs text-gray-500 mt-1">Account: ****{asset.data.account_number.slice(-4)}</p>
+          {isLiability && asset.data.loan_amount && (
+            <p className="text-sm font-medium text-gray-900 mt-2">Amount: {asset.data.loan_amount}</p>
+          )}
+          {isLiability && asset.data.interest_rate && (
+            <p className="text-xs text-gray-600 mt-1">Rate: {asset.data.interest_rate}</p>
+          )}
         </div>
         
         <div className="flex items-center space-x-2">
@@ -44,7 +61,7 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
         </div>
       </div>
 
-      {customFields.length > 0 && (
+      {(customFields.length > 0 || liabilityFields.length > 2) && (
         <div className="mt-4">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -56,6 +73,12 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
 
           {isExpanded && (
             <div className="mt-3 space-y-2 bg-gray-50 rounded-lg p-4">
+              {isLiability && liabilityFields.slice(2).map(([key, value]) => (
+                <div key={key} className="flex justify-between text-sm">
+                  <span className="text-gray-600">{key}:</span>
+                  <span className="text-gray-900 font-medium">{String(value)}</span>
+                </div>
+              ))}
               {customFields.map(([key, value]) => (
                 <div key={key} className="flex justify-between text-sm">
                   <span className="text-gray-600">{key}:</span>
