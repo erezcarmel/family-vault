@@ -45,6 +45,8 @@ export default function Sidebar() {
   const supabase = createClient()
 
   useEffect(() => {
+    let subscription: any = null
+    
     const loadUserRole = async () => {
       try {
         const familyId = await getFamilyId(supabase)
@@ -54,14 +56,35 @@ export default function Sidebar() {
           setUserRole(role)
           
           // Load family member count
-          const { count, error } = await supabase
-            .from('family_members')
-            .select('*', { count: 'exact', head: true })
-            .eq('family_id', familyId)
-          
-          if (!error && count !== null) {
-            setFamilyMemberCount(count)
+          const loadMemberCount = async () => {
+            const { count, error } = await supabase
+              .from('family_members')
+              .select('*', { count: 'exact', head: true })
+              .eq('family_id', familyId)
+            
+            if (!error && count !== null) {
+              setFamilyMemberCount(count)
+            }
           }
+          
+          await loadMemberCount()
+          
+          // Subscribe to changes in family_members table
+          subscription = supabase
+            .channel('family_members_count')
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'family_members',
+                filter: `family_id=eq.${familyId}`
+              },
+              () => {
+                loadMemberCount()
+              }
+            )
+            .subscribe()
         } else {
           console.log('Sidebar - No family ID found')
         }
@@ -70,7 +93,13 @@ export default function Sidebar() {
       }
     }
     loadUserRole()
-  }, [supabase, pathname])
+    
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe()
+      }
+    }
+  }, [supabase])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
