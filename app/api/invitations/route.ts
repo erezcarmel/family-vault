@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { sendInvitationEmail } from '@/lib/email'
 
 export async function GET(request: Request) {
   try {
@@ -100,6 +101,29 @@ export async function POST(request: Request) {
 
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 })
+    }
+
+    // Get family name for email
+    const { data: family } = await supabase
+      .from('families')
+      .select('family_name, main_user')
+      .eq('id', familyId)
+      .single()
+
+    const familyName = family?.family_name || family?.main_user || 'your family'
+
+    // Send invitation email
+    try {
+      await sendInvitationEmail({
+        to: email.toLowerCase().trim(),
+        invitationToken: newInvitation.token,
+        role: role,
+        familyName: familyName,
+        inviterName: user.email || 'Family Admin',
+      })
+    } catch (emailError) {
+      console.error('Error sending invitation email:', emailError)
+      // Don't fail the request if email fails - invitation is still created
     }
 
     return NextResponse.json({ success: true, data: newInvitation })
