@@ -16,7 +16,8 @@ import {
   faSignOutAlt,
   faBars,
   faTimes,
-  faVault
+  faVault,
+  faUserTie
 } from '@fortawesome/free-solid-svg-icons'
 import { createClient } from '@/lib/supabase/client'
 
@@ -29,6 +30,7 @@ const navigationItems = [
   { href: '/dashboard/digital-assets', icon: faLaptop, label: 'Digital Assets' },
   { href: '/dashboard/documents', icon: faFileAlt, label: 'Documents' },
   { href: '/dashboard/family', icon: faUsers, label: 'Family Tree' },
+  { href: '/dashboard/executors', icon: faUserTie, label: 'Executors' },
 ]
 
 export default function Sidebar() {
