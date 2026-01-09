@@ -141,6 +141,9 @@ Create new migration files in `supabase/migrations/` and run them in Supabase SQ
 **Issue**: "Table does not exist" error
 - **Solution**: Make sure you've run the migration SQL in your Supabase project
 
+**Issue**: "Could not find the table 'public.executors' in the schema cache" or similar table errors
+- **Solution**: Ensure all migration files (001-018) have been run in your Supabase SQL Editor in the correct order. Missing migrations will cause table not found errors for features like executors, invitations, and user management.
+
 **Issue**: Authentication not working
 - **Solution**: Verify Supabase Auth is enabled in your project settings
 

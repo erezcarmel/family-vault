@@ -193,9 +193,13 @@ git push
 ### Issue: Database queries failing
 
 **Solution:**
-1. Verify all migrations have been run in Supabase
+1. Verify all migrations (001-018) have been run in Supabase SQL Editor in order
 2. Check Row Level Security (RLS) policies are active
 3. Test database connection from Supabase Dashboard
+
+**Common error**: "Could not find the table 'public.executors' in the schema cache"
+- This means migration `012_add_executors.sql` (or other migrations) haven't been run
+- Run all missing migrations in sequence from the `supabase/migrations/` folder
 
 ### Issue: Image uploads not working
 
