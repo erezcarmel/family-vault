@@ -25,20 +25,21 @@ import { getFamilyId, getUserRole } from '@/lib/db-helpers-client'
 import type { UserRole } from '@/types'
 
 const navigationItems = [
-  { href: '/dashboard', icon: faHome, label: 'Dashboard' },
-  { href: '/dashboard/money-accounts', icon: faDollarSign, label: 'Money Accounts' },
-  { href: '/dashboard/insurance', icon: faShieldAlt, label: 'Insurance' },
-  { href: '/dashboard/liabilities', icon: faHandHoldingDollar, label: 'Liabilities' },
-  { href: '/dashboard/healthcare', icon: faHeartPulse, label: 'Healthcare' },
-  { href: '/dashboard/digital-assets', icon: faLaptop, label: 'Digital Assets' },
-  { href: '/dashboard/documents', icon: faFileAlt, label: 'Documents' },
-  { href: '/dashboard/family', icon: faUsers, label: 'Family Tree' },
-  { href: '/dashboard/executors', icon: faUserTie, label: 'Executors' },
+  { href: '/dashboard', icon: faHome, label: 'Dashboard', category: null },
+  { href: '/dashboard/money-accounts', icon: faDollarSign, label: 'Money Accounts', category: 'money_accounts' },
+  { href: '/dashboard/insurance', icon: faShieldAlt, label: 'Insurance', category: 'insurance' },
+  { href: '/dashboard/liabilities', icon: faHandHoldingDollar, label: 'Liabilities', category: 'liabilities' },
+  { href: '/dashboard/healthcare', icon: faHeartPulse, label: 'Healthcare', category: 'healthcare_records' },
+  { href: '/dashboard/digital-assets', icon: faLaptop, label: 'Digital Assets', category: 'digital_assets' },
+  { href: '/dashboard/documents', icon: faFileAlt, label: 'Documents', category: null },
+  { href: '/dashboard/family', icon: faUsers, label: 'Family Tree', category: null },
+  { href: '/dashboard/executors', icon: faUserTie, label: 'Executors', category: null },
 ]
 
 export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userRole, setUserRole] = useState<UserRole | null>(null)
+  const [assetCounts, setAssetCounts] = useState<Record<string, number>>({})
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -60,6 +61,44 @@ export default function Sidebar() {
     }
     loadUserRole()
   }, [supabase])
+
+  useEffect(() => {
+    const loadAssetCounts = async () => {
+      try {
+        const familyId = await getFamilyId(supabase)
+        if (!familyId) return
+
+        const counts: Record<string, number> = {}
+
+        // Fetch asset counts for money_accounts, insurance, liabilities, digital_assets
+        const { data: assets, error: assetsError } = await supabase
+          .from('assets')
+          .select('category')
+          .eq('family_id', familyId)
+
+        if (!assetsError && assets) {
+          assets.forEach((asset) => {
+            counts[asset.category] = (counts[asset.category] || 0) + 1
+          })
+        }
+
+        // Fetch healthcare records count separately
+        const { data: healthcareRecords, error: healthcareError } = await supabase
+          .from('healthcare_records')
+          .select('id')
+          .eq('family_id', familyId)
+
+        if (!healthcareError && healthcareRecords) {
+          counts['healthcare_records'] = healthcareRecords.length
+        }
+
+        setAssetCounts(counts)
+      } catch (error) {
+        console.error('Sidebar - Error loading asset counts:', error)
+      }
+    }
+    loadAssetCounts()
+  }, [supabase, pathname])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -112,6 +151,7 @@ export default function Sidebar() {
             <ul className="space-y-2">
               {navigationItems.map((item) => {
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                const count = item.category ? (assetCounts[item.category] || 0) : null
                 
                 return (
                   <li key={item.href}>
@@ -119,7 +159,7 @@ export default function Sidebar() {
                       href={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`
-                        flex items-center space-x-3 px-4 py-3 rounded-lg
+                        flex items-center justify-between px-4 py-3 rounded-lg
                         transition-colors duration-200
                         ${isActive
                           ? 'bg-indigo-50 text-indigo-600 font-medium'
@@ -127,8 +167,21 @@ export default function Sidebar() {
                         }
                       `}
                     >
-                      <FontAwesomeIcon icon={item.icon} className="w-5" />
-                      <span>{item.label}</span>
+                      <div className="flex items-center space-x-3">
+                        <FontAwesomeIcon icon={item.icon} className="w-5" />
+                        <span>{item.label}</span>
+                      </div>
+                      {count !== null && (
+                        <span className={`
+                          text-xs font-semibold px-2 py-1 rounded-full
+                          ${isActive
+                            ? 'bg-indigo-100 text-indigo-600'
+                            : 'bg-gray-100 text-gray-600'
+                          }
+                        `}>
+                          {count}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 )
