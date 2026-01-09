@@ -30,13 +30,26 @@ Run all migrations in your Supabase SQL Editor (in order):
 
 1. Go to your Supabase project dashboard
 2. Navigate to the SQL Editor
-3. Run each migration file:
+3. Run each migration file in order:
    - `001_initial_schema.sql` - Core tables and RLS policies
    - `002_add_providers.sql` - Pre-configured provider list
    - `003_add_account_types.sql` - Pre-configured account types
    - `004_add_family_name.sql` - Family name feature
    - `005_add_family_connections.sql` - Family relationships
    - `006_add_member_images.sql` - Photo storage setup
+   - `007_add_documents.sql` - Document storage
+   - `008_add_liabilities_data.sql` - Liabilities management
+   - `009_add_healthcare_records.sql` - Healthcare records (initial)
+   - `010_remove_healthcare_providers.sql` - Healthcare cleanup
+   - `011_drop_healthcare_related_tables.sql` - Healthcare refactor
+   - `012_add_executors.sql` - Executor access management
+   - `012_add_family_users.sql` - Family user roles
+   - `013_update_rls_for_roles.sql` - Role-based security
+   - `014_fix_family_users_rls_recursion.sql` - RLS fixes
+   - `015_add_existing_family_members_as_users.sql` - User migration
+   - `016_diagnose_family_members.sql` - Diagnostic queries
+   - `017_simple_add_family_members.sql` - Member utilities
+   - `018_add_invitations.sql` - Invitation system
 
 **Tip:** Copy/paste each file's contents into the SQL Editor and click "Run"
 
