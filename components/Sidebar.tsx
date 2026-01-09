@@ -31,7 +31,7 @@ const navigationItems = [
   { href: '/dashboard/liabilities', icon: faHandHoldingDollar, label: 'Liabilities', category: 'liabilities' },
   { href: '/dashboard/healthcare', icon: faHeartPulse, label: 'Healthcare', category: 'healthcare_records' },
   { href: '/dashboard/digital-assets', icon: faLaptop, label: 'Digital Assets', category: 'digital_assets' },
-  { href: '/dashboard/documents', icon: faFileAlt, label: 'Documents', category: null },
+  { href: '/dashboard/documents', icon: faFileAlt, label: 'Documents', category: 'documents' },
   { href: '/dashboard/family', icon: faUsers, label: 'Family Tree', category: 'family_members' },
   { href: '/dashboard/executors', icon: faUserTie, label: 'Executors', category: null },
 ]
@@ -84,14 +84,42 @@ export default function Sidebar() {
           })
         }
 
-        // Fetch healthcare records count using count query for efficiency
-        const { count: healthcareCount, error: healthcareError } = await supabase
-          .from('healthcare_records')
-          .select('*', { count: 'exact', head: true })
-          .eq('family_id', familyId)
+        // Fetch counts for healthcare records, documents, and family members in parallel
+        const [
+          { count: healthcareCount, error: healthcareError },
+          { count: documentsCount, error: documentsError },
+          { count: familyMembersCount, error: familyMembersError }
+        ] = await Promise.all([
+          supabase
+            .from('healthcare_records')
+            .select('id', { count: 'exact', head: true })
+            .eq('family_id', familyId),
+          supabase
+            .from('documents')
+            .select('id', { count: 'exact', head: true })
+            .eq('family_id', familyId),
+          supabase
+            .from('family_members')
+            .select('id', { count: 'exact', head: true })
+            .eq('family_id', familyId)
+        ])
 
         if (!healthcareError && healthcareCount !== null) {
           counts['healthcare_records'] = healthcareCount
+        } else if (healthcareError) {
+          console.error('Sidebar - Error loading healthcare records count:', healthcareError)
+        }
+
+        if (!documentsError && documentsCount !== null) {
+          counts['documents'] = documentsCount
+        } else if (documentsError) {
+          console.error('Sidebar - Error loading documents count:', documentsError)
+        }
+
+        if (!familyMembersError && familyMembersCount !== null) {
+          counts['family_members'] = familyMembersCount
+        } else if (familyMembersError) {
+          console.error('Sidebar - Error loading family members count:', familyMembersError)
         }
 
         // Fetch family members count
