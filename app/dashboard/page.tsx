@@ -109,29 +109,34 @@ export default function Dashboard() {
 
   const loadStatistics = async (familyId: string) => {
     try {
-      // Load family members count
-      const { count: membersCount } = await supabase
-        .from('family_members')
-        .select('*', { count: 'exact', head: true })
-        .eq('family_id', familyId)
+      // Load all statistics in parallel for better performance
+      const [
+        { count: membersCount },
+        { count: activeAccounts },
+        { count: totalAssets }
+      ] = await Promise.all([
+        // Load family members count
+        supabase
+          .from('family_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('family_id', familyId),
+        
+        // Load active accounts count (money_accounts + insurance + liabilities)
+        supabase
+          .from('assets')
+          .select('*', { count: 'exact', head: true })
+          .eq('family_id', familyId)
+          .in('category', ['money_accounts', 'insurance', 'liabilities']),
+        
+        // Load total assets count (all categories)
+        supabase
+          .from('assets')
+          .select('*', { count: 'exact', head: true })
+          .eq('family_id', familyId)
+      ])
       
       setFamilyMembersCount(membersCount || 0)
-
-      // Load active accounts count (money_accounts + insurance + liabilities)
-      const { count: activeAccounts } = await supabase
-        .from('assets')
-        .select('*', { count: 'exact', head: true })
-        .eq('family_id', familyId)
-        .in('category', ['money_accounts', 'insurance', 'liabilities'])
-      
       setActiveAccountsCount(activeAccounts || 0)
-
-      // Load total assets count (all categories)
-      const { count: totalAssets } = await supabase
-        .from('assets')
-        .select('*', { count: 'exact', head: true })
-        .eq('family_id', familyId)
-      
       setTotalAssetsCount(totalAssets || 0)
     } catch (error) {
       console.error('Error loading statistics:', error)
