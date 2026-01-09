@@ -66,16 +66,6 @@ export default function Executors() {
     }
   }
 
-  const hashPassword = async (password: string): Promise<string> => {
-    // Simple hash for demo - in production, use proper backend hashing
-    const encoder = new TextEncoder()
-    const data = encoder.encode(password)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-    return hashHex
-  }
-
   const handleAddExecutor = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -84,43 +74,25 @@ export default function Executors() {
     try {
       setSaving(true)
 
-      if (editingExecutor) {
-        // Update existing executor
-        const updateData: {
-          name: string
-          email: string
-          relationship_description: string
-          password_hash?: string
-        } = {
+      // Use server-side API for secure password hashing
+      const response = await fetch('/api/executors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          executor_id: editingExecutor?.id,
           name: newExecutor.name,
           email: newExecutor.email,
+          password: newExecutor.password,
           relationship_description: newExecutor.relationship_description,
-        }
+        }),
+      })
 
-        // Only update password if a new one is provided
-        if (newExecutor.password) {
-          updateData.password_hash = await hashPassword(newExecutor.password)
-        }
+      const result = await response.json()
 
-        const { error } = await supabase
-          .from('executors')
-          .update(updateData)
-          .eq('id', editingExecutor.id)
-
-        if (error) throw error
-      } else {
-        // Insert new executor
-        const { error } = await supabase
-          .from('executors')
-          .insert({
-            family_id: familyId,
-            name: newExecutor.name,
-            email: newExecutor.email,
-            password_hash: await hashPassword(newExecutor.password),
-            relationship_description: newExecutor.relationship_description,
-          })
-
-        if (error) throw error
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save executor')
       }
 
       await loadExecutors(familyId)
@@ -129,11 +101,8 @@ export default function Executors() {
       setEditingExecutor(null)
     } catch (error: unknown) {
       console.error('Error saving executor:', error)
-      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
-        alert('An executor with this email already exists for your family.')
-      } else {
-        alert('Failed to save executor. Please try again.')
-      }
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save executor. Please try again.'
+      alert(errorMessage)
     } finally {
       setSaving(false)
     }
@@ -263,7 +232,7 @@ export default function Executors() {
                     className="input-field pl-10"
                     placeholder="executor@example.com"
                     required
-                    disabled={!!editingExecutor}
+                    disabled={editingExecutor != null}
                   />
                 </div>
                 {editingExecutor && (
