@@ -31,8 +31,8 @@ const navigationItems = [
   { href: '/dashboard/liabilities', icon: faHandHoldingDollar, label: 'Liabilities', category: 'liabilities' },
   { href: '/dashboard/healthcare', icon: faHeartPulse, label: 'Healthcare', category: 'healthcare_records' },
   { href: '/dashboard/digital-assets', icon: faLaptop, label: 'Digital Assets', category: 'digital_assets' },
-  { href: '/dashboard/documents', icon: faFileAlt, label: 'Documents', category: null },
-  { href: '/dashboard/family', icon: faUsers, label: 'Family Tree', category: null },
+  { href: '/dashboard/documents', icon: faFileAlt, label: 'Documents', category: 'documents' },
+  { href: '/dashboard/family', icon: faUsers, label: 'Family Tree', category: 'family_members' },
   { href: '/dashboard/executors', icon: faUserTie, label: 'Executors', category: null },
 ]
 
@@ -92,6 +92,26 @@ export default function Sidebar() {
 
         if (!healthcareError && healthcareCount !== null) {
           counts['healthcare_records'] = healthcareCount
+        }
+
+        // Fetch documents count
+        const { count: documentsCount, error: documentsError } = await supabase
+          .from('documents')
+          .select('*', { count: 'exact', head: true })
+          .eq('family_id', familyId)
+
+        if (!documentsError && documentsCount !== null) {
+          counts['documents'] = documentsCount
+        }
+
+        // Fetch family members count
+        const { count: familyMembersCount, error: familyMembersError } = await supabase
+          .from('family_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('family_id', familyId)
+
+        if (!familyMembersError && familyMembersCount !== null) {
+          counts['family_members'] = familyMembersCount
         }
 
         setAssetCounts(counts)
