@@ -29,15 +29,30 @@ export default function Onboarding() {
       }
 
       // Create family for the user
-      const { error } = await supabase
+      const { data: family, error } = await supabase
         .from('families')
         .insert({
           user_id: user.id,
           main_user: name,
           family_name: familyName || name,
         })
+        .select()
+        .single()
 
       if (error) throw error
+
+      // Create family_users entry with admin role for the first user
+      if (family) {
+        const { error: familyUserError } = await supabase
+          .from('family_users')
+          .insert({
+            family_id: family.id,
+            user_id: user.id,
+            role: 'admin',
+          })
+
+        if (familyUserError) throw familyUserError
+      }
 
       router.push('/onboarding/family-tree')
     } catch (err: any) {

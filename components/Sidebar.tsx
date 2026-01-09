@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -17,9 +17,12 @@ import {
   faBars,
   faTimes,
   faVault,
-  faUserTie
+  faUserTie,
+  faUserCog
 } from '@fortawesome/free-solid-svg-icons'
 import { createClient } from '@/lib/supabase/client'
+import { getFamilyId, getUserRole } from '@/lib/db-helpers-client'
+import type { UserRole } from '@/types'
 
 const navigationItems = [
   { href: '/dashboard', icon: faHome, label: 'Dashboard' },
@@ -35,9 +38,28 @@ const navigationItems = [
 
 export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [userRole, setUserRole] = useState<UserRole | null>(null)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    const loadUserRole = async () => {
+      try {
+        const familyId = await getFamilyId(supabase)
+        if (familyId) {
+          const role = await getUserRole(supabase, familyId)
+          console.log('Sidebar - Family ID:', familyId, 'Role:', role)
+          setUserRole(role)
+        } else {
+          console.log('Sidebar - No family ID found')
+        }
+      } catch (error) {
+        console.error('Sidebar - Error loading user role:', error)
+      }
+    }
+    loadUserRole()
+  }, [supabase])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -111,6 +133,25 @@ export default function Sidebar() {
                   </li>
                 )
               })}
+              {userRole === 'admin' && (
+                <li>
+                  <Link
+                    href="/dashboard/users"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`
+                      flex items-center space-x-3 px-4 py-3 rounded-lg
+                      transition-colors duration-200
+                      ${pathname === '/dashboard/users'
+                        ? 'bg-indigo-50 text-indigo-600 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                      }
+                    `}
+                  >
+                    <FontAwesomeIcon icon={faUserCog} className="w-5" />
+                    <span>User Management</span>
+                  </Link>
+                </li>
+              )}
             </ul>
           </nav>
 

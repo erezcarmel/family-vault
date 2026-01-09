@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faUser, faEnvelope, faPlus, faTrash, faUsers, faEdit, faCamera, faTimes } from '@fortawesome/free-solid-svg-icons'
-import type { FamilyMember, FamilyConnection } from '@/types'
+import { faUser, faEnvelope, faPlus, faTrash, faUsers, faEdit, faCamera, faTimes, faShieldAlt, faUserEdit, faPaperPlane } from '@fortawesome/free-solid-svg-icons'
+import type { FamilyMember, FamilyConnection, UserRole } from '@/types'
+import { getFamilyId, isEditorOrAdmin } from '@/lib/db-helpers-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,7 @@ export default function FamilyTree() {
     name: '',
     email: '',
     relationship: '',
+    role: 'member' as UserRole,
   })
   const [memberConnections, setMemberConnections] = useState<Array<{
     relatedMemberId: string
@@ -27,6 +29,9 @@ export default function FamilyTree() {
   const [uploadedImageFile, setUploadedImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [canEdit, setCanEdit] = useState(false)
+  const [invitingMember, setInvitingMember] = useState<string | null>(null)
+  const [memberUserStatus, setMemberUserStatus] = useState<Record<string, boolean>>({})
   const supabase = createClient()
 
   const relationshipOptions = [
@@ -50,32 +55,94 @@ export default function FamilyTree() {
     'Grandchild of',
   ]
 
+  const roleOptions: { value: UserRole; label: string; icon: any }[] = [
+    { value: 'admin', label: 'Admin', icon: faShieldAlt },
+    { value: 'editor', label: 'Editor', icon: faUserEdit },
+    { value: 'member', label: 'Member', icon: faUser },
+  ]
+
   useEffect(() => {
     loadData()
   }, [])
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user) {
-        // Get family ID
-        const { data: family } = await supabase
-          .from('families')
-          .select('id')
-          .eq('user_id', user.id)
-          .single()
-
-        if (family) {
-          setFamilyId(family.id)
-          await loadMembers(family.id)
-          await loadConnections(family.id)
-        }
+      const fid = await getFamilyId(supabase)
+      if (fid) {
+        setFamilyId(fid)
+        const canEditValue = await isEditorOrAdmin(supabase, fid)
+        setCanEdit(canEditValue)
+        await loadMembers(fid)
+        await loadConnections(fid)
       }
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkMemberUserStatus = async (fid: string, membersList: FamilyMember[] = members) => {
+    const { data: familyUsers } = await supabase
+      .from('family_users')
+      .select('user_id')
+      .eq('family_id', fid)
+
+    if (!familyUsers) return
+
+    const userIds = new Set(familyUsers.map(fu => fu.user_id))
+
+    const statusMap: Record<string, boolean> = {}
+    for (const member of membersList) {
+      if (member.email) {
+        try {
+          const response = await fetch('/api/get-user-by-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: member.email }),
+          })
+          const result = await response.json()
+          if (result.userId && userIds.has(result.userId)) {
+            statusMap[member.id] = true
+          } else {
+            statusMap[member.id] = false
+          }
+        } catch {
+          statusMap[member.id] = false
+        }
+      }
+    }
+    setMemberUserStatus(statusMap)
+  }
+
+  const handleInviteMember = async (member: FamilyMember) => {
+    if (!familyId || !member.email) return
+
+    setInvitingMember(member.id)
+    try {
+      const response = await fetch('/api/invitations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: member.email,
+          role: newMember.role || 'member',
+          familyId: familyId,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || result.error || 'Failed to create invitation')
+      }
+
+      alert(`Invitation sent to ${member.email}! Share this link: ${window.location.origin}/auth/signup?token=${result.data.token}`)
+      await checkMemberUserStatus(familyId)
+    } catch (err: any) {
+      console.error('Error inviting member:', err)
+      alert(err.message || 'Failed to send invitation')
+    } finally {
+      setInvitingMember(null)
     }
   }
 
@@ -197,6 +264,28 @@ export default function FamilyTree() {
 
         if (error) throw error
 
+        // Update family_users entry if email exists
+        if (newMember.email) {
+          const response = await fetch('/api/get-user-by-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: newMember.email }),
+          })
+          const result = await response.json()
+          
+          if (result.userId) {
+            const { error: updateUserError } = await supabase
+              .from('family_users')
+              .update({ role: newMember.role })
+              .eq('family_id', familyId)
+              .eq('user_id', result.userId)
+
+            if (updateUserError && updateUserError.code !== 'PGRST116') {
+              console.error('Error updating family_users:', updateUserError)
+            }
+          }
+        }
+
         // Delete existing connections for this member
         await supabase
           .from('family_connections')
@@ -230,6 +319,28 @@ export default function FamilyTree() {
               .eq('id', memberId)
           }
         }
+
+        // Create family_users entry if email is provided
+        if (newMember.email) {
+          try {
+            const response = await fetch('/api/add-family-user', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: newMember.email,
+                role: newMember.role,
+                familyId: familyId,
+              }),
+            })
+
+            const result = await response.json()
+            if (!response.ok && result.error !== 'User already exists') {
+              console.warn('Could not add user to family_users:', result.message || result.error)
+            }
+          } catch (err) {
+            console.warn('Error adding user to family_users:', err)
+          }
+        }
       }
 
       // Insert connections
@@ -250,7 +361,7 @@ export default function FamilyTree() {
 
       await loadMembers(familyId)
       await loadConnections(familyId)
-      setNewMember({ name: '', email: '', relationship: '' })
+      setNewMember({ name: '', email: '', relationship: '', role: 'member' })
       setMemberConnections([])
       setUploadedImageFile(null)
       setImagePreview(null)
@@ -261,12 +372,39 @@ export default function FamilyTree() {
     }
   }
 
-  const handleEditMember = (member: FamilyMember) => {
+  const handleEditMember = async (member: FamilyMember) => {
     setEditingMember(member)
+    
+    let memberRole: UserRole = 'member'
+    if (member.email && familyId) {
+      try {
+        const response = await fetch('/api/get-user-by-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: member.email }),
+        })
+        const result = await response.json()
+        if (result.userId) {
+          const { data: familyUser } = await supabase
+            .from('family_users')
+            .select('role')
+            .eq('family_id', familyId)
+            .eq('user_id', result.userId)
+            .maybeSingle()
+          if (familyUser) {
+            memberRole = familyUser.role
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch user role:', err)
+      }
+    }
+    
     setNewMember({
       name: member.name,
       email: member.email || '',
       relationship: member.relationship,
+      role: memberRole,
     })
 
     // Set existing image preview
@@ -379,17 +517,19 @@ export default function FamilyTree() {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="btn-primary"
-        >
-          <FontAwesomeIcon icon={faPlus} className="mr-2" />
-          Add Member
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="btn-primary"
+          >
+            <FontAwesomeIcon icon={faPlus} className="mr-2" />
+            Add Member
+          </button>
+        )}
       </div>
 
       {/* Add/Edit Member Form */}
-      {isAdding && (
+      {isAdding && canEdit && (
         <div className="card mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             {editingMember ? 'Edit Family Member' : 'Add Family Member'}
@@ -436,7 +576,7 @@ export default function FamilyTree() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Name
@@ -458,7 +598,7 @@ export default function FamilyTree() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email (Optional)
+                Email
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -472,6 +612,9 @@ export default function FamilyTree() {
                   placeholder="member@example.com"
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Required to add as app user
+              </p>
             </div>
 
             <div>
@@ -493,13 +636,34 @@ export default function FamilyTree() {
               </select>
             </div>
 
-            <div className="md:col-span-3 flex space-x-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Role
+              </label>
+              <select
+                value={newMember.role}
+                onChange={(e) => setNewMember({ ...newMember, role: e.target.value as UserRole })}
+                className="input-field"
+                disabled={!newMember.email}
+              >
+                {roleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {newMember.email ? 'App user permissions' : 'Enter email to set role'}
+              </p>
+            </div>
+
+            <div className="md:col-span-4 flex space-x-3">
               <button
                 type="button"
                 onClick={() => {
                   setIsAdding(false)
                   setEditingMember(null)
-                  setNewMember({ name: '', email: '', relationship: '' })
+                  setNewMember({ name: '', email: '', relationship: '', role: 'member' })
                   setMemberConnections([])
                   setUploadedImageFile(null)
                   setImagePreview(null)
@@ -520,7 +684,7 @@ export default function FamilyTree() {
 
             {/* Connections Section */}
             {members.length > 0 && (
-              <div className="md:col-span-3 border-t border-gray-200 pt-6">
+              <div className="md:col-span-4 border-t border-gray-200 pt-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">Family Connections (Optional)</h3>
@@ -610,13 +774,15 @@ export default function FamilyTree() {
           <FontAwesomeIcon icon={faUsers} className="text-6xl text-gray-300 mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No Family Members Yet</h3>
           <p className="text-gray-600 mb-6">Start building your family tree</p>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="btn-primary"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add Your First Member
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setIsAdding(true)}
+              className="btn-primary"
+            >
+              <FontAwesomeIcon icon={faPlus} className="mr-2" />
+              Add Your First Member
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -659,20 +825,34 @@ export default function FamilyTree() {
                 </div>
                 
                 <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => handleEditMember(member)}
-                    className="text-indigo-600 hover:text-indigo-700 p-2 rounded-lg hover:bg-indigo-50 transition-colors"
-                    title="Edit member"
-                  >
-                    <FontAwesomeIcon icon={faEdit} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteMember(member.id)}
-                    className="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors"
-                    title="Delete member"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
+                  {member.email && !memberUserStatus[member.id] && canEdit && (
+                    <button
+                      onClick={() => handleInviteMember(member)}
+                      disabled={invitingMember === member.id}
+                      className="text-green-600 hover:text-green-700 p-2 rounded-lg hover:bg-green-50 transition-colors disabled:opacity-50"
+                      title="Invite as user"
+                    >
+                      <FontAwesomeIcon icon={faPaperPlane} />
+                    </button>
+                  )}
+                  {canEdit && (
+                    <>
+                      <button
+                        onClick={() => handleEditMember(member)}
+                        className="text-indigo-600 hover:text-indigo-700 p-2 rounded-lg hover:bg-indigo-50 transition-colors"
+                        title="Edit member"
+                      >
+                        <FontAwesomeIcon icon={faEdit} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMember(member.id)}
+                        className="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                        title="Delete member"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

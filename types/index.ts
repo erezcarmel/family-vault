@@ -1,3 +1,5 @@
+export type UserRole = 'admin' | 'editor' | 'member'
+
 export interface Family {
   id: string
   user_id: string
@@ -5,6 +7,32 @@ export interface Family {
   family_name: string | null
   created_at: string
   updated_at: string
+}
+
+export interface FamilyUser {
+  id: string
+  family_id: string
+  user_id: string
+  role: UserRole
+  created_at: string
+  updated_at: string
+  email?: string
+  name?: string
+}
+
+export interface Invitation {
+  id: string
+  family_id: string
+  email: string
+  role: UserRole
+  invited_by: string
+  status: 'pending' | 'accepted' | 'expired' | 'cancelled'
+  token: string
+  expires_at: string
+  created_at: string
+  updated_at: string
+  invited_by_email?: string
+  invited_by_name?: string
 }
 
 export interface FamilyMember {

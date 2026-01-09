@@ -43,6 +43,26 @@ export default function SignUp() {
       if (error) throw error
 
       if (data.user) {
+        const { searchParams } = new URL(window.location.href)
+        const invitationToken = searchParams.get('token')
+        
+        if (invitationToken) {
+          try {
+            const response = await fetch('/api/accept-invitation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: invitationToken }),
+            })
+            const result = await response.json()
+            if (result.success) {
+              router.push('/dashboard')
+              return
+            }
+          } catch (inviteError) {
+            console.error('Error accepting invitation:', inviteError)
+          }
+        }
+        
         router.push('/onboarding')
       }
     } catch (err: any) {
