@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faEnvelope, faPlus, faTrash, faUserTie, faEdit, faKey, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import type { Executor } from '@/types'
+import { getFamilyId, isAdmin } from '@/lib/db-helpers-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,7 @@ export default function Executors() {
     relationship_description: '',
   })
   const [saving, setSaving] = useState(false)
+  const [canManage, setCanManage] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -30,19 +32,13 @@ export default function Executors() {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user) {
-        // Get family ID
-        const { data: family } = await supabase
-          .from('families')
-          .select('id')
-          .eq('user_id', user.id)
-          .single()
-
-        if (family) {
-          setFamilyId(family.id)
-          await loadExecutors(family.id)
+      const fid = await getFamilyId(supabase)
+      if (fid) {
+        setFamilyId(fid)
+        const isAdminUser = await isAdmin(supabase, fid)
+        setCanManage(isAdminUser)
+        if (isAdminUser) {
+          await loadExecutors(fid)
         }
       }
     } catch (error) {
@@ -148,6 +144,18 @@ export default function Executors() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!canManage) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="card text-center py-12">
+          <FontAwesomeIcon icon={faUserTie} className="text-6xl text-gray-300 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h3>
+          <p className="text-gray-600">You need admin permissions to manage executors.</p>
         </div>
       </div>
     )
