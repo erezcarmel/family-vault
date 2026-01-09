@@ -73,6 +73,9 @@ export default function Dashboard() {
   const [editingFamilyName, setEditingFamilyName] = useState(false)
   const [newFamilyName, setNewFamilyName] = useState('')
   const [savingFamilyName, setSavingFamilyName] = useState(false)
+  const [familyMembersCount, setFamilyMembersCount] = useState(0)
+  const [activeAccountsCount, setActiveAccountsCount] = useState(0)
+  const [totalAssetsCount, setTotalAssetsCount] = useState(0)
   const supabase = createClient()
 
   useEffect(() => {
@@ -91,11 +94,47 @@ export default function Dashboard() {
           .single()
         
         setFamily(data)
+        
+        // Load statistics if family exists
+        if (data?.id) {
+          await loadStatistics(data.id)
+        }
       }
     } catch (error) {
       console.error('Error loading family:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadStatistics = async (familyId: string) => {
+    try {
+      // Load family members count
+      const { count: membersCount } = await supabase
+        .from('family_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('family_id', familyId)
+      
+      setFamilyMembersCount(membersCount || 0)
+
+      // Load active accounts count (money_accounts + insurance + liabilities)
+      const { count: activeAccounts } = await supabase
+        .from('assets')
+        .select('*', { count: 'exact', head: true })
+        .eq('family_id', familyId)
+        .in('category', ['money_accounts', 'insurance', 'liabilities'])
+      
+      setActiveAccountsCount(activeAccounts || 0)
+
+      // Load total assets count (all categories)
+      const { count: totalAssets } = await supabase
+        .from('assets')
+        .select('*', { count: 'exact', head: true })
+        .eq('family_id', familyId)
+      
+      setTotalAssetsCount(totalAssets || 0)
+    } catch (error) {
+      console.error('Error loading statistics:', error)
     }
   }
 
@@ -244,17 +283,17 @@ export default function Dashboard() {
       <div className="mt-12 grid md:grid-cols-3 gap-6">
         <div className="card bg-gradient-to-br from-indigo-50 to-indigo-100">
           <div className="text-sm text-indigo-600 font-medium mb-1">Total Assets</div>
-          <div className="text-2xl font-bold text-indigo-900">0</div>
+          <div className="text-2xl font-bold text-indigo-900">{totalAssetsCount}</div>
         </div>
         
         <div className="card bg-gradient-to-br from-green-50 to-green-100">
           <div className="text-sm text-green-600 font-medium mb-1">Active Accounts</div>
-          <div className="text-2xl font-bold text-green-900">0</div>
+          <div className="text-2xl font-bold text-green-900">{activeAccountsCount}</div>
         </div>
         
         <div className="card bg-gradient-to-br from-purple-50 to-purple-100">
           <div className="text-sm text-purple-600 font-medium mb-1">Family Members</div>
-          <div className="text-2xl font-bold text-purple-900">0</div>
+          <div className="text-2xl font-bold text-purple-900">{familyMembersCount}</div>
         </div>
       </div>
     </div>
