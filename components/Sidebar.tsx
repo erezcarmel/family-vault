@@ -47,7 +47,7 @@ export default function Sidebar() {
   useEffect(() => {
     let subscription: any = null
     
-    const loadUserRole = async () => {
+    const loadData = async () => {
       try {
         const familyId = await getFamilyId(supabase)
         if (familyId) {
@@ -55,7 +55,7 @@ export default function Sidebar() {
           console.log('Sidebar - Family ID:', familyId, 'Role:', role)
           setUserRole(role)
           
-          // Load family member count
+          // Function to load family member count
           const loadMemberCount = async () => {
             const { count, error } = await supabase
               .from('family_members')
@@ -67,6 +67,7 @@ export default function Sidebar() {
             }
           }
           
+          // Initial load
           await loadMemberCount()
           
           // Subscribe to changes in family_members table
@@ -81,6 +82,7 @@ export default function Sidebar() {
                 filter: `family_id=eq.${familyId}`
               },
               () => {
+                // Reload count when any change occurs to family members
                 loadMemberCount()
               }
             )
@@ -89,11 +91,13 @@ export default function Sidebar() {
           console.log('Sidebar - No family ID found')
         }
       } catch (error) {
-        console.error('Sidebar - Error loading user role:', error)
+        console.error('Sidebar - Error loading data:', error)
       }
     }
-    loadUserRole()
     
+    loadData()
+    
+    // Cleanup subscription on unmount
     return () => {
       if (subscription) {
         subscription.unsubscribe()
