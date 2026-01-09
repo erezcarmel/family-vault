@@ -72,6 +72,7 @@ export default function Sidebar() {
         const counts: Record<string, number> = {}
 
         // Fetch asset counts for money_accounts, insurance, liabilities, digital_assets
+        // We need to fetch category data to group by category
         const { data: assets, error: assetsError } = await supabase
           .from('assets')
           .select('category')
@@ -83,14 +84,14 @@ export default function Sidebar() {
           })
         }
 
-        // Fetch healthcare records count separately
-        const { data: healthcareRecords, error: healthcareError } = await supabase
+        // Fetch healthcare records count using count query for efficiency
+        const { count: healthcareCount, error: healthcareError } = await supabase
           .from('healthcare_records')
-          .select('id')
+          .select('*', { count: 'exact', head: true })
           .eq('family_id', familyId)
 
-        if (!healthcareError && healthcareRecords) {
-          counts['healthcare_records'] = healthcareRecords.length
+        if (!healthcareError && healthcareCount !== null) {
+          counts['healthcare_records'] = healthcareCount
         }
 
         setAssetCounts(counts)
@@ -106,7 +107,7 @@ export default function Sidebar() {
     if (isAssetPage || !countsLoaded) {
       loadAssetCounts()
     }
-  }, [supabase, pathname, countsLoaded])
+  }, [supabase, pathname])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
