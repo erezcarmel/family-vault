@@ -15,7 +15,12 @@ export async function getOrCreateFamily(userId: string, userName: string): Promi
     .single()
 
   if (familyUser && familyUser.families) {
-    return familyUser.families as Family
+    const families = Array.isArray(familyUser.families) 
+      ? familyUser.families[0] 
+      : familyUser.families
+    if (families) {
+      return families as Family
+    }
   }
 
   // Try legacy method (for backward compatibility)
