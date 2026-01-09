@@ -92,15 +92,15 @@ export default function Sidebar() {
         ] = await Promise.all([
           supabase
             .from('healthcare_records')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('family_id', familyId),
           supabase
             .from('documents')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('family_id', familyId),
           supabase
             .from('family_members')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('family_id', familyId)
         ])
 
