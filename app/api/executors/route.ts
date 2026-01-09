@@ -5,7 +5,8 @@ import * as crypto from 'crypto'
 // Helper function to hash passwords securely
 function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString('hex')
-  const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex')
+  // OWASP recommends at least 120,000 iterations for PBKDF2-SHA512
+  const hash = crypto.pbkdf2Sync(password, salt, 120000, 64, 'sha512').toString('hex')
   return `${salt}:${hash}`
 }
 
@@ -23,6 +24,25 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, email, password, relationship_description, executor_id } = body
 
+    // Validate required fields
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    }
+
+    if (!email || typeof email !== 'string' || email.trim().length === 0) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
+    }
+
+    if (!relationship_description || typeof relationship_description !== 'string' || relationship_description.trim().length === 0) {
+      return NextResponse.json({ error: 'Relationship description is required' }, { status: 400 })
+    }
+
     // Get user's family ID
     const { data: family, error: familyError } = await supabase
       .from('families')
@@ -38,12 +58,10 @@ export async function POST(request: Request) {
       // Update existing executor
       const updateData: {
         name: string
-        email: string
         relationship_description: string
         password_hash?: string
       } = {
         name,
-        email,
         relationship_description,
       }
 
