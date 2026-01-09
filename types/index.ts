@@ -191,3 +191,14 @@ export type HealthcareProviderType =
   | 'pharmacy'
   | 'dental'
   | 'vision'
+
+export interface Executor {
+  id: string
+  family_id: string
+  name: string
+  email: string
+  password_hash: string
+  relationship_description: string
+  created_at: string
+  updated_at: string
+}
