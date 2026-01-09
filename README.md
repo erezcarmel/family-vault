@@ -71,8 +71,8 @@ Go to your Supabase project's SQL Editor and run all migration files in order:
 - `supabase/migrations/009_add_healthcare_records.sql`
 - `supabase/migrations/010_remove_healthcare_providers.sql`
 - `supabase/migrations/011_drop_healthcare_related_tables.sql`
-- `supabase/migrations/012_add_executors.sql`
-- `supabase/migrations/012_add_family_users.sql`
+- `supabase/migrations/012_add_executors.sql` (run this first)
+- `supabase/migrations/012_add_family_users.sql` (run this second - note: both files are numbered 012)
 - `supabase/migrations/013_update_rls_for_roles.sql`
 - `supabase/migrations/014_fix_family_users_rls_recursion.sql`
 - `supabase/migrations/015_add_existing_family_members_as_users.sql`

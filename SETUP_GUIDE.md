@@ -42,8 +42,8 @@ Run all migrations in your Supabase SQL Editor (in order):
    - `009_add_healthcare_records.sql` - Healthcare records (initial)
    - `010_remove_healthcare_providers.sql` - Healthcare cleanup
    - `011_drop_healthcare_related_tables.sql` - Healthcare refactor
-   - `012_add_executors.sql` - Executor access management
-   - `012_add_family_users.sql` - Family user roles
+   - `012_add_executors.sql` - Executor access management (run first)
+   - `012_add_family_users.sql` - Family user roles (run second - note: both files numbered 012)
    - `013_update_rls_for_roles.sql` - Role-based security
    - `014_fix_family_users_rls_recursion.sql` - RLS fixes
    - `015_add_existing_family_members_as_users.sql` - User migration
