@@ -15,7 +15,7 @@ interface CustomField {
 interface AssetModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (assetType: string, data: any) => void
+  onSave: (assetType: string, data: Record<string, unknown>) => void
   asset?: Asset | null
   subCategories: { id: AssetType; title: string }[]
   category: string
@@ -176,11 +176,11 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setCustomFields(customFields.filter(field => field.name !== name))
   }
 
-  const handleDocumentDataExtracted = (data: any) => {
+  const handleDocumentDataExtracted = (data: Record<string, unknown>) => {
     // Set main fields
-    if (data.provider_name) setProviderName(data.provider_name)
-    if (data.account_type) setAccountType(data.account_type)
-    if (data.account_number) setAccountNumber(data.account_number)
+    if (data.provider_name) setProviderName(String(data.provider_name))
+    if (data.account_type) setAccountType(String(data.account_type))
+    if (data.account_number) setAccountNumber(String(data.account_number))
 
     // Set custom fields (anything that's not the main fields)
     const mainFields = ['provider_name', 'account_type', 'account_number']
@@ -227,7 +227,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     // NOTE: Account/Policy Type is now optional for non-liability categories
 
     // Build data object
-    const data: any = {
+    const data: Record<string, unknown> = {
       provider_name: finalProviderName,
       account_type: finalAccountType,
       account_number: accountNumber,

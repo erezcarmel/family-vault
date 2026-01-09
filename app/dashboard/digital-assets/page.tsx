@@ -66,7 +66,7 @@ export default function DigitalAssets() {
     }
   }
 
-  const handleSave = async (assetType: string, data: any) => {
+  const handleSave = async (assetType: string, data: Record<string, unknown>) => {
     if (!familyId) return
 
     try {
