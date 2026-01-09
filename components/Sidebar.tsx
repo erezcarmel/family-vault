@@ -84,34 +84,42 @@ export default function Sidebar() {
           })
         }
 
-        // Fetch healthcare records count using count query for efficiency
-        const { count: healthcareCount, error: healthcareError } = await supabase
-          .from('healthcare_records')
-          .select('*', { count: 'exact', head: true })
-          .eq('family_id', familyId)
+        // Fetch counts for healthcare records, documents, and family members in parallel
+        const [
+          { count: healthcareCount, error: healthcareError },
+          { count: documentsCount, error: documentsError },
+          { count: familyMembersCount, error: familyMembersError }
+        ] = await Promise.all([
+          supabase
+            .from('healthcare_records')
+            .select('*', { count: 'exact', head: true })
+            .eq('family_id', familyId),
+          supabase
+            .from('documents')
+            .select('*', { count: 'exact', head: true })
+            .eq('family_id', familyId),
+          supabase
+            .from('family_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('family_id', familyId)
+        ])
 
         if (!healthcareError && healthcareCount !== null) {
           counts['healthcare_records'] = healthcareCount
+        } else if (healthcareError) {
+          console.error('Sidebar - Error loading healthcare records count:', healthcareError)
         }
-
-        // Fetch documents count
-        const { count: documentsCount, error: documentsError } = await supabase
-          .from('documents')
-          .select('*', { count: 'exact', head: true })
-          .eq('family_id', familyId)
 
         if (!documentsError && documentsCount !== null) {
           counts['documents'] = documentsCount
+        } else if (documentsError) {
+          console.error('Sidebar - Error loading documents count:', documentsError)
         }
-
-        // Fetch family members count
-        const { count: familyMembersCount, error: familyMembersError } = await supabase
-          .from('family_members')
-          .select('*', { count: 'exact', head: true })
-          .eq('family_id', familyId)
 
         if (!familyMembersError && familyMembersCount !== null) {
           counts['family_members'] = familyMembersCount
+        } else if (familyMembersError) {
+          console.error('Sidebar - Error loading family members count:', familyMembersError)
         }
 
         setAssetCounts(counts)
