@@ -48,6 +48,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [password, setPassword] = useState('')
   const [passwordEnabled, setPasswordEnabled] = useState(false)
   const [recoveryEmail, setRecoveryEmail] = useState('')
+  const [notes, setNotes] = useState('')
   
   const supabase = createClient()
 
@@ -72,12 +73,13 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         setPasswordEnabled(true)
       }
       if (asset.data.recovery_email) setRecoveryEmail(asset.data.recovery_email)
+      if (asset.data.notes) setNotes(asset.data.notes)
       
       // Extract custom fields (excluding standard fields)
       const standardFields = ['provider_name', 'account_type', 'account_number', 
                               'loan_amount', 'interest_rate', 'loan_term', 
                               'monthly_payment', 'term_length',
-                              'email', 'password', 'recovery_email']
+                              'email', 'password', 'recovery_email', 'notes']
       const customData = Object.entries(asset.data)
         .filter(([key]) => !standardFields.includes(key))
         .map(([name, value]) => ({ name, value: String(value) }))
@@ -156,6 +158,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setPassword('')
     setPasswordEnabled(false)
     setRecoveryEmail('')
+    setNotes('')
   }
 
   const addCustomField = () => {
@@ -209,15 +212,16 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     const finalProviderName = providerName === '__custom__' ? customProviderName : providerName
     const finalAccountType = accountType === '__custom__' ? customAccountType : accountType
 
-    if (!finalProviderName) {
-      alert('Please enter a provider name')
-      return
-    }
-
     // Validation for email account-specific fields
     if (category === 'digital_assets' && subCategory === 'email_accounts') {
       if (!email) {
         alert('Please enter an email address')
+        return
+      }
+    } else {
+      // For non-email accounts, validate provider name
+      if (!finalProviderName) {
+        alert('Please enter a provider name')
         return
       }
     }
@@ -227,10 +231,13 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     // NOTE: Account/Policy Type is now optional for non-liability categories
 
     // Build data object
-    const data: Record<string, unknown> = {
-      provider_name: finalProviderName,
-      account_type: finalAccountType,
-      account_number: accountNumber,
+    const data: Record<string, unknown> = {}
+    
+    // Only add provider_name, account_type, and account_number for non-email accounts
+    if (category !== 'digital_assets' || subCategory !== 'email_accounts') {
+      data.provider_name = finalProviderName
+      data.account_type = finalAccountType
+      data.account_number = accountNumber
     }
     
     // Add liability-specific fields
@@ -247,12 +254,15 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (email) data.email = email
       if (passwordEnabled && password) data.password = password
       if (recoveryEmail) data.recovery_email = recoveryEmail
+      if (notes) data.notes = notes
     }
 
-    // Add custom fields
-    customFields.forEach(field => {
-      data[field.name] = field.value
-    })
+    // Add custom fields (only for non-email accounts)
+    if (category !== 'digital_assets' || subCategory !== 'email_accounts') {
+      customFields.forEach(field => {
+        data[field.name] = field.value
+      })
+    }
 
     onSave(subCategory, data)
     resetForm()
@@ -276,14 +286,18 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Document Scanner Section */}
-          <DocumentScanner
-            category={category}
-            subCategory={subCategory}
-            onDataExtracted={handleDocumentDataExtracted}
-          />
+          {/* Document Scanner Section - Hide for email accounts */}
+          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+            <DocumentScanner
+              category={category}
+              subCategory={subCategory}
+              onDataExtracted={handleDocumentDataExtracted}
+            />
+          )}
 
-          <div className="border-t border-gray-200 pt-2"></div>
+          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+            <div className="border-t border-gray-200 pt-2"></div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
