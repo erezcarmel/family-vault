@@ -97,8 +97,18 @@ export default function Sidebar() {
         console.error('Sidebar - Error loading asset counts:', error)
       }
     }
-    loadAssetCounts()
-  }, [supabase, pathname])
+    
+    // Only load counts when on asset-related pages or initially
+    const isAssetPage = pathname?.startsWith('/dashboard/money-accounts') ||
+                       pathname?.startsWith('/dashboard/insurance') ||
+                       pathname?.startsWith('/dashboard/liabilities') ||
+                       pathname?.startsWith('/dashboard/healthcare') ||
+                       pathname?.startsWith('/dashboard/digital-assets')
+    
+    if (isAssetPage || Object.keys(assetCounts).length === 0) {
+      loadAssetCounts()
+    }
+  }, [supabase, pathname, assetCounts])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -192,7 +202,7 @@ export default function Sidebar() {
                     href="/dashboard/users"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`
-                      flex items-center space-x-3 px-4 py-3 rounded-lg
+                      flex items-center justify-between px-4 py-3 rounded-lg
                       transition-colors duration-200
                       ${pathname === '/dashboard/users'
                         ? 'bg-indigo-50 text-indigo-600 font-medium'
@@ -200,8 +210,10 @@ export default function Sidebar() {
                       }
                     `}
                   >
-                    <FontAwesomeIcon icon={faUserCog} className="w-5" />
-                    <span>User Management</span>
+                    <div className="flex items-center space-x-3">
+                      <FontAwesomeIcon icon={faUserCog} className="w-5" />
+                      <span>User Management</span>
+                    </div>
                   </Link>
                 </li>
               )}
