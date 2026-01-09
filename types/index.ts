@@ -112,3 +112,82 @@ export interface Document {
   created_at: string
   updated_at: string
 }
+
+export interface HealthcareRecord {
+  id: string
+  family_id: string
+  member_id: string
+  provider_id: string | null
+  provider_name: string | null
+  provider_type: string
+  doctor_name: string | null
+  specialty: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  zip_code: string | null
+  policy_number: string | null
+  group_number: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface HealthcareMedication {
+  id: string
+  healthcare_record_id: string
+  medication_name: string
+  dosage: string | null
+  frequency: string | null
+  start_date: string | null
+  end_date: string | null
+  prescribing_doctor: string | null
+  pharmacy_name: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface HealthcareAllergy {
+  id: string
+  healthcare_record_id: string
+  allergen_name: string
+  severity: string | null
+  reaction_description: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface HealthcareCondition {
+  id: string
+  healthcare_record_id: string
+  condition_name: string
+  diagnosis_date: string | null
+  status: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface HealthcareEmergencyContact {
+  id: string
+  healthcare_record_id: string
+  contact_name: string
+  relationship: string | null
+  phone: string
+  email: string | null
+  address: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type HealthcareProviderType = 
+  | 'primary_care'
+  | 'specialist'
+  | 'pharmacy'
+  | 'dental'
+  | 'vision'

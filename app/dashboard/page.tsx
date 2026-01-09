@@ -54,9 +54,8 @@ const assetSections = [
     id: 'healthcare',
     title: 'Healthcare',
     icon: faHeartPulse,
-    description: 'Coming soon',
+    description: 'Manage healthcare records, medications, and providers for your family',
     color: 'bg-pink-500',
-    disabled: true,
   },
   {
     id: 'digital-assets',
