@@ -51,6 +51,8 @@ export type AssetType =
   | 'life_insurance'
   | 'home_insurance'
   | 'health_insurance'
+  | 'mortgage'
+  | 'loans'
 
 export interface AssetData {
   provider_name: string

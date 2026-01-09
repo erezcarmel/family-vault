@@ -35,6 +35,14 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [accountTypes, setAccountTypes] = useState<AccountType[]>([])
   const [loadingProviders, setLoadingProviders] = useState(false)
   const [loadingAccountTypes, setLoadingAccountTypes] = useState(false)
+  
+  // Liability-specific fields
+  const [loanAmount, setLoanAmount] = useState('')
+  const [interestRate, setInterestRate] = useState('')
+  const [loanTerm, setLoanTerm] = useState('')
+  const [monthlyPayment, setMonthlyPayment] = useState('')
+  const [termLength, setTermLength] = useState('')
+  
   const supabase = createClient()
 
   useEffect(() => {
@@ -44,9 +52,19 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       setAccountNumber(asset.data.account_number)
       setSubCategory(asset.type as AssetType)
       
-      // Extract custom fields
+      // Set liability-specific fields if they exist
+      if (asset.data.loan_amount) setLoanAmount(asset.data.loan_amount)
+      if (asset.data.interest_rate) setInterestRate(asset.data.interest_rate)
+      if (asset.data.loan_term) setLoanTerm(asset.data.loan_term)
+      if (asset.data.monthly_payment) setMonthlyPayment(asset.data.monthly_payment)
+      if (asset.data.term_length) setTermLength(asset.data.term_length)
+      
+      // Extract custom fields (excluding standard fields)
+      const standardFields = ['provider_name', 'account_type', 'account_number', 
+                              'loan_amount', 'interest_rate', 'loan_term', 
+                              'monthly_payment', 'term_length']
       const customData = Object.entries(asset.data)
-        .filter(([key]) => !['provider_name', 'account_type', 'account_number'].includes(key))
+        .filter(([key]) => !standardFields.includes(key))
         .map(([name, value]) => ({ name, value: String(value) }))
       setCustomFields(customData)
     } else {
@@ -114,6 +132,11 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setNewFieldValue('')
     setProviders([])
     setAccountTypes([])
+    setLoanAmount('')
+    setInterestRate('')
+    setLoanTerm('')
+    setMonthlyPayment('')
+    setTermLength('')
   }
 
   const addCustomField = () => {
@@ -172,13 +195,45 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       return
     }
 
-    // NOTE: Account/Policy Type is now optional. We no longer block submission when it's empty.
+    // Validate liability-specific mandatory fields
+    if (category === 'liabilities') {
+      if (subCategory === 'mortgage') {
+        if (!loanAmount) {
+          alert('Loan Amount is required for mortgages')
+          return
+        }
+        if (!interestRate) {
+          alert('Interest Rate is required for mortgages')
+          return
+        }
+      } else if (subCategory === 'loans') {
+        if (!finalAccountType) {
+          alert('Loan Type is required')
+          return
+        }
+        if (!loanAmount) {
+          alert('Loan Amount is required')
+          return
+        }
+      }
+    }
+
+    // NOTE: Account/Policy Type is now optional for non-liability categories
 
     // Build data object
     const data: any = {
       provider_name: finalProviderName,
       account_type: finalAccountType,
       account_number: accountNumber,
+    }
+    
+    // Add liability-specific fields
+    if (category === 'liabilities') {
+      if (loanAmount) data.loan_amount = loanAmount
+      if (interestRate) data.interest_rate = interestRate
+      if (loanTerm) data.loan_term = loanTerm
+      if (monthlyPayment) data.monthly_payment = monthlyPayment
+      if (termLength) data.term_length = termLength
     }
 
     // Add custom fields
@@ -292,7 +347,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Account/Policy Type
+              Account/Policy Type{category === 'liabilities' && subCategory === 'loans' ? ' *' : ''}
             </label>
             {subCategory && accountTypes.length > 0 ? (
               <div className="space-y-2">
@@ -305,6 +360,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                     }
                   }}
                   className="input-field"
+                  required={category === 'liabilities' && subCategory === 'loans'}
                 >
                   <option value="">Select account/policy type</option>
                   {accountTypes.map((type) => (
@@ -321,6 +377,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                     onChange={(e) => setCustomAccountType(e.target.value)}
                     className="input-field"
                     placeholder="Enter custom account/policy type"
+                    required={category === 'liabilities' && subCategory === 'loans'}
                   />
                 )}
               </div>
@@ -332,6 +389,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                 className="input-field"
                 placeholder={loadingAccountTypes ? "Loading types..." : "e.g., Checking, Life Insurance"}
                 disabled={loadingAccountTypes}
+                required={category === 'liabilities' && subCategory === 'loans'}
               />
             )}
             {!subCategory && (
@@ -354,6 +412,84 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
               required
             />
           </div>
+
+          {/* Liability-specific fields */}
+          {category === 'liabilities' && subCategory && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Loan Amount *
+                </label>
+                <input
+                  type="text"
+                  value={loanAmount}
+                  onChange={(e) => setLoanAmount(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., $250,000"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Interest Rate{subCategory === 'mortgage' ? ' *' : ''}
+                </label>
+                <input
+                  type="text"
+                  value={interestRate}
+                  onChange={(e) => setInterestRate(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., 3.5% or 0.035"
+                  required={subCategory === 'mortgage'}
+                />
+              </div>
+
+              {subCategory === 'mortgage' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Loan Term
+                    </label>
+                    <input
+                      type="text"
+                      value={loanTerm}
+                      onChange={(e) => setLoanTerm(e.target.value)}
+                      className="input-field"
+                      placeholder="e.g., 30 years, 15 years"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Monthly Payment
+                    </label>
+                    <input
+                      type="text"
+                      value={monthlyPayment}
+                      onChange={(e) => setMonthlyPayment(e.target.value)}
+                      className="input-field"
+                      placeholder="e.g., $1,200"
+                    />
+                  </div>
+                </>
+              )}
+
+              {subCategory === 'loans' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Term Length
+                  </label>
+                  <input
+                    type="text"
+                    value={termLength}
+                    onChange={(e) => setTermLength(e.target.value)}
+                    className="input-field"
+                    placeholder="e.g., 5 years, 60 months"
+                  />
+                </div>
+              )}
+            </>
+          )}
 
           {/* Custom Fields */}
           <div className="border-t border-gray-200 pt-6">
