@@ -122,6 +122,16 @@ export default function Sidebar() {
           console.error('Sidebar - Error loading family members count:', familyMembersError)
         }
 
+        // Fetch family members count
+        const { count: familyMembersCount, error: familyMembersError } = await supabase
+          .from('family_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('family_id', familyId)
+
+        if (!familyMembersError && familyMembersCount !== null) {
+          counts['family_members'] = familyMembersCount
+        }
+
         setAssetCounts(counts)
         setCountsLoaded(true)
       } catch (error) {
