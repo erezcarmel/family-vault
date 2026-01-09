@@ -195,28 +195,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       return
     }
 
-    // Validate liability-specific mandatory fields
-    if (category === 'liabilities') {
-      if (subCategory === 'mortgage') {
-        if (!loanAmount) {
-          alert('Loan Amount is required for mortgages')
-          return
-        }
-        if (!interestRate) {
-          alert('Interest Rate is required for mortgages')
-          return
-        }
-      } else if (subCategory === 'loans') {
-        if (!finalAccountType) {
-          alert('Loan Type is required')
-          return
-        }
-        if (!loanAmount) {
-          alert('Loan Amount is required')
-          return
-        }
-      }
-    }
+    // No validation for liability-specific fields - all are optional
 
     // NOTE: Account/Policy Type is now optional for non-liability categories
 
@@ -345,59 +324,59 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Account/Policy Type{category === 'liabilities' && subCategory === 'loans' ? ' *' : ''}
-            </label>
-            {subCategory && accountTypes.length > 0 ? (
-              <div className="space-y-2">
-                <select
-                  value={accountType}
-                  onChange={(e) => {
-                    setAccountType(e.target.value)
-                    if (e.target.value !== '__custom__') {
-                      setCustomAccountType('')
-                    }
-                  }}
-                  className="input-field"
-                  required={category === 'liabilities' && subCategory === 'loans'}
-                >
-                  <option value="">Select account/policy type</option>
-                  {accountTypes.map((type) => (
-                    <option key={type.id} value={type.name}>
-                      {type.name}
-                    </option>
-                  ))}
-                  <option value="__custom__">Other (Enter manually)</option>
-                </select>
-                {accountType === '__custom__' && (
-                  <input
-                    type="text"
-                    value={customAccountType}
-                    onChange={(e) => setCustomAccountType(e.target.value)}
+          {/* Hide Account/Policy Type field for liabilities */}
+          {category !== 'liabilities' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Account/Policy Type
+              </label>
+              {subCategory && accountTypes.length > 0 ? (
+                <div className="space-y-2">
+                  <select
+                    value={accountType}
+                    onChange={(e) => {
+                      setAccountType(e.target.value)
+                      if (e.target.value !== '__custom__') {
+                        setCustomAccountType('')
+                      }
+                    }}
                     className="input-field"
-                    placeholder="Enter custom account/policy type"
-                    required={category === 'liabilities' && subCategory === 'loans'}
-                  />
-                )}
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value)}
-                className="input-field"
-                placeholder={loadingAccountTypes ? "Loading types..." : "e.g., Checking, Life Insurance"}
-                disabled={loadingAccountTypes}
-                required={category === 'liabilities' && subCategory === 'loans'}
-              />
-            )}
-            {!subCategory && (
-              <p className="text-xs text-gray-500 mt-1">
-                Select a sub-category first to see account type options
-              </p>
-            )}
-          </div>
+                  >
+                    <option value="">Select account/policy type</option>
+                    {accountTypes.map((type) => (
+                      <option key={type.id} value={type.name}>
+                        {type.name}
+                      </option>
+                    ))}
+                    <option value="__custom__">Other (Enter manually)</option>
+                  </select>
+                  {accountType === '__custom__' && (
+                    <input
+                      type="text"
+                      value={customAccountType}
+                      onChange={(e) => setCustomAccountType(e.target.value)}
+                      className="input-field"
+                      placeholder="Enter custom account/policy type"
+                    />
+                  )}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={accountType}
+                  onChange={(e) => setAccountType(e.target.value)}
+                  className="input-field"
+                  placeholder={loadingAccountTypes ? "Loading types..." : "e.g., Checking, Life Insurance"}
+                  disabled={loadingAccountTypes}
+                />
+              )}
+              {!subCategory && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Select a sub-category first to see account type options
+                </p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -418,7 +397,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Loan Amount *
+                  Loan Amount
                 </label>
                 <input
                   type="text"
@@ -426,13 +405,12 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                   onChange={(e) => setLoanAmount(e.target.value)}
                   className="input-field"
                   placeholder="e.g., $250,000"
-                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Interest Rate{subCategory === 'mortgage' ? ' *' : ''}
+                  Interest Rate
                 </label>
                 <input
                   type="text"
@@ -440,7 +418,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                   onChange={(e) => setInterestRate(e.target.value)}
                   className="input-field"
                   placeholder="e.g., 3.5% or 0.035"
-                  required={subCategory === 'mortgage'}
                 />
               </div>
 
