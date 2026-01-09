@@ -24,7 +24,8 @@ export default function Executors() {
   const supabase = createClient()
 
   useEffect(() => {
-    loadData()
+    void loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadData = async () => {
@@ -85,7 +86,12 @@ export default function Executors() {
 
       if (editingExecutor) {
         // Update existing executor
-        const updateData: any = {
+        const updateData: {
+          name: string
+          email: string
+          relationship_description: string
+          password_hash?: string
+        } = {
           name: newExecutor.name,
           email: newExecutor.email,
           relationship_description: newExecutor.relationship_description,
@@ -121,9 +127,9 @@ export default function Executors() {
       setNewExecutor({ name: '', email: '', password: '', relationship_description: '' })
       setIsAdding(false)
       setEditingExecutor(null)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving executor:', error)
-      if (error.code === '23505') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
         alert('An executor with this email already exists for your family.')
       } else {
         alert('Failed to save executor. Please try again.')
