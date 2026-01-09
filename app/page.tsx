@@ -59,26 +59,37 @@ export default async function Home() {
     }
 
     if (user) {
-      // Check if user has a family (completed onboarding)
-      const { data: family, error: familyError } = await supabase
-        .from('families')
-        .select('*')
+      // Check if user has a family through family_users
+      const { data: familyUser } = await supabase
+        .from('family_users')
+        .select('family_id')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
-      if (familyError) {
-        console.error('Family check error:', familyError)
-      }
-
-      if (family) {
+      if (familyUser) {
         redirect('/dashboard')
       } else {
-        redirect('/onboarding')
+        // Fallback to legacy method
+        const { data: family } = await supabase
+          .from('families')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (family) {
+          redirect('/dashboard')
+        } else {
+          redirect('/onboarding')
+        }
       }
     }
 
     redirect('/auth/signin')
-  } catch (error) {
+  } catch (error: any) {
+    // Don't log redirect errors - they're expected in Next.js
+    if (error?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw error
+    }
     console.error('Error in home page:', error)
     redirect('/auth/signin')
   }

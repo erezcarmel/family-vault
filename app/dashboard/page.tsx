@@ -48,7 +48,6 @@ const assetSections = [
     icon: faHandHoldingDollar,
     description: 'Coming soon',
     color: 'bg-red-500',
-    disabled: true,
   },
   {
     id: 'healthcare',
