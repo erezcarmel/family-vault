@@ -40,6 +40,7 @@ export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [assetCounts, setAssetCounts] = useState<Record<string, number>>({})
+  const [countsLoaded, setCountsLoaded] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -93,22 +94,19 @@ export default function Sidebar() {
         }
 
         setAssetCounts(counts)
+        setCountsLoaded(true)
       } catch (error) {
         console.error('Sidebar - Error loading asset counts:', error)
       }
     }
     
-    // Only load counts when on asset-related pages or initially
-    const isAssetPage = pathname?.startsWith('/dashboard/money-accounts') ||
-                       pathname?.startsWith('/dashboard/insurance') ||
-                       pathname?.startsWith('/dashboard/liabilities') ||
-                       pathname?.startsWith('/dashboard/healthcare') ||
-                       pathname?.startsWith('/dashboard/digital-assets')
+    // Only load counts when on asset-related pages or on initial load
+    const isAssetPage = navigationItems.some(item => item.category && pathname?.startsWith(item.href))
     
-    if (isAssetPage || Object.keys(assetCounts).length === 0) {
+    if (isAssetPage || !countsLoaded) {
       loadAssetCounts()
     }
-  }, [supabase, pathname, assetCounts])
+  }, [supabase, pathname, countsLoaded])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
