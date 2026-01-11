@@ -27,7 +27,7 @@ import { getFamilyId, getUserRole } from '@/lib/db-helpers-client'
 import type { UserRole } from '@/types'
 
 const navigationItems = [
-  { href: '/dashboard', icon: faHome, label: 'Dashboard', category: null, isAsset: false },
+  { href: '/dashboard', icon: faHome, label: 'Dashboard', category: null },
 ]
 
 const assetItems = [
@@ -239,20 +239,23 @@ export default function Sidebar() {
               <li>
                 <button
                   onClick={() => setIsAssetsExpanded(!isAssetsExpanded)}
+                  aria-expanded={isAssetsExpanded}
+                  aria-controls="family-assets-list"
                   className="flex items-center justify-between px-4 py-3 rounded-lg w-full
                     text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                 >
                   <div className="flex items-center space-x-3">
                     <FontAwesomeIcon 
                       icon={isAssetsExpanded ? faChevronDown : faChevronRight} 
-                      className="w-4 text-gray-500" 
+                      className="w-4 text-gray-500"
+                      aria-hidden="true"
                     />
                     <span className="font-medium">Family Assets</span>
                   </div>
                 </button>
                 
                 {isAssetsExpanded && (
-                  <ul className="mt-1 space-y-1">
+                  <ul id="family-assets-list" className="mt-1 space-y-1">
                     {assetItems.map((item) => {
                       const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
                       const count = item.category ? (assetCounts[item.category] || 0) : null
