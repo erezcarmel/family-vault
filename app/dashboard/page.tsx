@@ -17,10 +17,20 @@ import {
   faTimes,
 } from '@fortawesome/free-solid-svg-icons'
 import type { Family } from '@/types'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 
 export const dynamic = 'force-dynamic'
 
-const assetSections = [
+interface AssetSection {
+  id: string
+  title: string
+  icon: IconDefinition
+  description: string
+  color: string
+  disabled?: boolean
+}
+
+const assetSections: AssetSection[] = [
   {
     id: 'money-accounts',
     title: 'Money Accounts',
@@ -60,9 +70,8 @@ const assetSections = [
     id: 'digital-assets',
     title: 'Digital Assets',
     icon: faLaptop,
-    description: 'Coming soon',
+    description: 'Manage your digital assets and email accounts',
     color: 'bg-purple-500',
-    disabled: true,
   },
 ]
 
