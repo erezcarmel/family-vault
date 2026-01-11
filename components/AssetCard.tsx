@@ -14,9 +14,12 @@ interface AssetCardProps {
 export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
+  // Check if this is a digital asset email account
+  const isEmailAccount = asset.category === 'digital_assets' && asset.type === 'email_accounts'
+  
   // Get custom fields (all fields except the main ones and liability-specific ones)
   const customFields = Object.entries(asset.data).filter(
-    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length'].includes(key)
+    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes'].includes(key)
   )
   
   // Check if this is a liability
@@ -37,9 +40,21 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
     <div className="card hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900">{asset.data.provider_name}</h3>
-          <p className="text-sm text-gray-600 mt-1">{asset.data.account_type}</p>
-          <p className="text-xs text-gray-500 mt-1">Account: ****{asset.data.account_number.slice(-4)}</p>
+          {isEmailAccount ? (
+            <>
+              <h3 className="text-lg font-semibold text-gray-900">{asset.data.email}</h3>
+              <p className="text-sm text-gray-600 mt-1">Email Account</p>
+              {asset.data.recovery_email && (
+                <p className="text-xs text-gray-500 mt-1">Recovery: {asset.data.recovery_email}</p>
+              )}
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold text-gray-900">{asset.data.provider_name}</h3>
+              <p className="text-sm text-gray-600 mt-1">{asset.data.account_type}</p>
+              <p className="text-xs text-gray-500 mt-1">Account: ****{asset.data.account_number.slice(-4)}</p>
+            </>
+          )}
           {isLiability && asset.data.loan_amount && (
             <p className="text-sm font-medium text-gray-900 mt-2">Amount: {asset.data.loan_amount}</p>
           )}
@@ -64,7 +79,7 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
         </div>
       </div>
 
-      {(customFields.length > 0 || liabilityFields.length > PRIMARY_LIABILITY_FIELDS_COUNT) && (
+      {(customFields.length > 0 || liabilityFields.length > PRIMARY_LIABILITY_FIELDS_COUNT || (isEmailAccount && asset.data.notes)) && (
         <div className="mt-4">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -82,6 +97,12 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
                   <span className="text-gray-900 font-medium">{String(value)}</span>
                 </div>
               ))}
+              {isEmailAccount && asset.data.notes && (
+                <div className="text-sm">
+                  <span className="text-gray-600">Notes:</span>
+                  <p className="text-gray-900 mt-1 whitespace-pre-wrap">{String(asset.data.notes)}</p>
+                </div>
+              )}
               {customFields.map(([key, value]) => (
                 <div key={key} className="flex justify-between text-sm">
                   <span className="text-gray-600">{key}:</span>
