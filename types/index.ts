@@ -82,6 +82,7 @@ export type AssetType =
   | 'mortgage'
   | 'loans'
   | 'email_accounts'
+  | 'computer_access'
 
 export interface AssetData {
   provider_name: string

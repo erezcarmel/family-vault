@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic'
 
 const subCategories: { id: AssetType; title: string }[] = [
   { id: 'email_accounts', title: 'Email Accounts' },
+  { id: 'computer_access', title: 'Computer Access' },
 ]
 
 export default function DigitalAssets() {

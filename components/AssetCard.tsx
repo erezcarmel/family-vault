@@ -13,13 +13,17 @@ interface AssetCardProps {
 
 export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // Check if this is a digital asset email account
   const isEmailAccount = asset.category === 'digital_assets' && asset.type === 'email_accounts'
   
+  // Check if this is a computer access asset
+  const isComputerAccess = asset.category === 'digital_assets' && asset.type === 'computer_access'
+  
   // Get custom fields (all fields except the main ones and liability-specific ones)
   const customFields = Object.entries(asset.data).filter(
-    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes'].includes(key)
+    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password'].includes(key)
   )
   
   // Check if this is a liability
@@ -46,6 +50,27 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
               <p className="text-sm text-gray-600 mt-1">Email Account</p>
               {asset.data.recovery_email && (
                 <p className="text-xs text-gray-500 mt-1">Recovery: {asset.data.recovery_email}</p>
+              )}
+            </>
+          ) : isComputerAccess ? (
+            <>
+              <h3 className="text-lg font-semibold text-gray-900">{asset.data.device_name}</h3>
+              <p className="text-sm text-gray-600 mt-1">Computer Access</p>
+              {asset.data.computer_user && (
+                <p className="text-xs text-gray-500 mt-1">User: {asset.data.computer_user}</p>
+              )}
+              {asset.data.computer_password && (
+                <div className="mt-2 flex items-center space-x-2">
+                  <p className="text-xs text-gray-500">
+                    Password: {showPassword ? asset.data.computer_password : '••••••••'}
+                  </p>
+                  <button
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-xs text-indigo-600 hover:text-indigo-700 underline"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
               )}
             </>
           ) : (
