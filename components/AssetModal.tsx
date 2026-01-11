@@ -270,9 +270,9 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (notes) data.notes = notes
     } else if (category === 'digital_assets' && subCategory === 'computer_access') {
       // For computer access, only include computer access-specific fields
-      if (deviceName) data.device_name = deviceName
-      if (computerUser) data.computer_user = computerUser
-      if (computerPassword) data.computer_password = computerPassword
+      data.device_name = deviceName
+      data.computer_user = computerUser
+      data.computer_password = computerPassword
     } else {
       // For other categories, include standard fields
       data.provider_name = finalProviderName
