@@ -54,7 +54,11 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
             <>
               <h3 className="text-lg font-semibold text-gray-900">{asset.data.provider_name}</h3>
               <p className="text-sm text-gray-600 mt-1">{asset.data.account_type}</p>
-              <p className="text-xs text-gray-500 mt-1">Account: ****{asset.data.account_number?.slice(-4)}</p>
+              {asset.data.account_number && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Account: ****{asset.data.account_number.length >= 4 ? asset.data.account_number.slice(-4) : asset.data.account_number}
+                </p>
+              )}
               {isLiability && asset.data.loan_amount && (
                 <p className="text-sm font-medium text-gray-900 mt-2">Amount: {asset.data.loan_amount}</p>
               )}
