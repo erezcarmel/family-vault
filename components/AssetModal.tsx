@@ -50,6 +50,12 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [recoveryEmail, setRecoveryEmail] = useState('')
   const [notes, setNotes] = useState('')
   
+  // Computer access-specific fields
+  const [deviceName, setDeviceName] = useState('')
+  const [computerUser, setComputerUser] = useState('')
+  const [computerPassword, setComputerPassword] = useState('')
+  const [showComputerPassword, setShowComputerPassword] = useState(false)
+  
   const supabase = createClient()
 
   useEffect(() => {
@@ -75,11 +81,17 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (asset.data.recovery_email) setRecoveryEmail(asset.data.recovery_email)
       if (asset.data.notes) setNotes(asset.data.notes)
       
+      // Set computer access-specific fields if they exist
+      if (asset.data.device_name) setDeviceName(asset.data.device_name)
+      if (asset.data.computer_user) setComputerUser(asset.data.computer_user)
+      if (asset.data.computer_password) setComputerPassword(asset.data.computer_password)
+      
       // Extract custom fields (excluding standard fields)
       const standardFields = ['provider_name', 'account_type', 'account_number', 
                               'loan_amount', 'interest_rate', 'loan_term', 
                               'monthly_payment', 'term_length',
-                              'email', 'password', 'recovery_email', 'notes']
+                              'email', 'password', 'recovery_email', 'notes',
+                              'device_name', 'computer_user', 'computer_password']
       const customData = Object.entries(asset.data)
         .filter(([key]) => !standardFields.includes(key))
         .map(([name, value]) => ({ name, value: String(value) }))
@@ -159,6 +171,10 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setPasswordEnabled(false)
     setRecoveryEmail('')
     setNotes('')
+    setDeviceName('')
+    setComputerUser('')
+    setComputerPassword('')
+    setShowComputerPassword(false)
   }
 
   const addCustomField = () => {
@@ -218,6 +234,20 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         alert('Please enter an email address')
         return
       }
+    } else if (category === 'digital_assets' && subCategory === 'computer_access') {
+      // Validation for computer access-specific fields
+      if (!deviceName) {
+        alert('Please enter a device name')
+        return
+      }
+      if (!computerUser) {
+        alert('Please enter a user name')
+        return
+      }
+      if (!computerPassword) {
+        alert('Please enter a password')
+        return
+      }
     } else {
       if (!finalProviderName) {
         alert('Please enter a provider name')
@@ -238,6 +268,11 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (passwordEnabled && password) data.password = password
       if (recoveryEmail) data.recovery_email = recoveryEmail
       if (notes) data.notes = notes
+    } else if (category === 'digital_assets' && subCategory === 'computer_access') {
+      // For computer access, only include computer access-specific fields
+      data.device_name = deviceName
+      data.computer_user = computerUser
+      data.computer_password = computerPassword
     } else {
       // For other categories, include standard fields
       data.provider_name = finalProviderName
@@ -282,7 +317,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Document Scanner Section */}
-          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
             <>
               <DocumentScanner
                 category={category}
@@ -312,7 +347,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </select>
           </div>
 
-          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Provider Name *
@@ -368,8 +403,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </div>
           )}
 
-          {/* Hide Account/Policy Type field for liabilities and email accounts */}
-          {category !== 'liabilities' && !(category === 'digital_assets' && subCategory === 'email_accounts') && (
+          {/* Hide Account/Policy Type field for liabilities, email accounts and computer access */}
+          {category !== 'liabilities' && !(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account/Policy Type
@@ -422,7 +457,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </div>
           )}
 
-          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account Number {category !== 'digital_assets' && '*'}
@@ -606,8 +641,77 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </>
           )}
 
+          {/* Computer access-specific fields */}
+          {category === 'digital_assets' && subCategory === 'computer_access' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Device Name *
+                </label>
+                <input
+                  type="text"
+                  value={deviceName}
+                  onChange={(e) => setDeviceName(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., Living Room Desktop, John's Laptop"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The name or description of the computer or device
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  User *
+                </label>
+                <input
+                  type="text"
+                  value={computerUser}
+                  onChange={(e) => setComputerUser(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., john_admin, administrator"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The username for logging into this device
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showComputerPassword ? "text" : "password"}
+                    value={computerPassword}
+                    onChange={(e) => setComputerPassword(e.target.value)}
+                    className="input-field pr-10"
+                    placeholder="Enter device password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowComputerPassword(!showComputerPassword)}
+                    className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-gray-900"
+                  >
+                    {showComputerPassword ? (
+                      <span className="text-sm">Hide</span>
+                    ) : (
+                      <span className="text-sm">Show</span>
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Password will be obfuscated when viewing the asset
+                </p>
+              </div>
+            </>
+          )}
+
           {/* Custom Fields */}
-          {!(category === 'digital_assets' && subCategory === 'email_accounts') && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
               
