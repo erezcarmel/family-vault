@@ -12,6 +12,13 @@ interface CustomField {
   value: string
 }
 
+interface IdentificationMethod {
+  id: string
+  method: 'biometrics' | 'screen_lock'
+  type: string
+  pinValue?: string
+}
+
 interface AssetModalProps {
   isOpen: boolean
   onClose: () => void
@@ -56,6 +63,16 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [computerPassword, setComputerPassword] = useState('')
   const [showComputerPassword, setShowComputerPassword] = useState(false)
   
+  // Phone access-specific fields
+  const [phoneName, setPhoneName] = useState('')
+  const [phoneOwner, setPhoneOwner] = useState('')
+  const [customPhoneOwner, setCustomPhoneOwner] = useState('')
+  const [phonePassword, setPhonePassword] = useState('')
+  const [showPhonePassword, setShowPhonePassword] = useState(false)
+  const [identificationMethods, setIdentificationMethods] = useState<IdentificationMethod[]>([])
+  const [familyMembers, setFamilyMembers] = useState<Array<{ id: string; name: string }>>([])
+  const [loadingFamilyMembers, setLoadingFamilyMembers] = useState(false)
+  
   const supabase = createClient()
 
   useEffect(() => {
@@ -86,12 +103,21 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (asset.data.computer_user) setComputerUser(asset.data.computer_user)
       if (asset.data.computer_password) setComputerPassword(asset.data.computer_password)
       
+      // Set phone access-specific fields if they exist
+      if (asset.data.phone_name) setPhoneName(asset.data.phone_name)
+      if (asset.data.phone_owner) setPhoneOwner(asset.data.phone_owner)
+      if (asset.data.phone_password) setPhonePassword(asset.data.phone_password)
+      if (asset.data.identification_methods) {
+        setIdentificationMethods(JSON.parse(JSON.stringify(asset.data.identification_methods)))
+      }
+      
       // Extract custom fields (excluding standard fields)
       const standardFields = ['provider_name', 'account_type', 'account_number', 
                               'loan_amount', 'interest_rate', 'loan_term', 
                               'monthly_payment', 'term_length',
                               'email', 'password', 'recovery_email', 'notes',
-                              'device_name', 'computer_user', 'computer_password']
+                              'device_name', 'computer_user', 'computer_password',
+                              'phone_name', 'phone_owner', 'phone_password', 'identification_methods']
       const customData = Object.entries(asset.data)
         .filter(([key]) => !standardFields.includes(key))
         .map(([name, value]) => ({ name, value: String(value) }))
@@ -106,6 +132,9 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     if (subCategory) {
       loadProviders(subCategory)
       loadAccountTypes(subCategory)
+      if (subCategory === 'phone_access') {
+        loadFamilyMembers()
+      }
     }
   }, [subCategory])
 
@@ -149,6 +178,39 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     }
   }
 
+  const loadFamilyMembers = async () => {
+    setLoadingFamilyMembers(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Get family ID
+        const { data: family } = await supabase
+          .from('families')
+          .select('id')
+          .eq('user_id', user.id)
+          .single()
+
+        if (family) {
+          // Load family members
+          const { data, error } = await supabase
+            .from('family_members')
+            .select('id, name')
+            .eq('family_id', family.id)
+            .order('name')
+
+          if (error) throw error
+          setFamilyMembers(data || [])
+        }
+      }
+    } catch (error) {
+      console.error('Error loading family members:', error)
+      setFamilyMembers([])
+    } finally {
+      setLoadingFamilyMembers(false)
+    }
+  }
+
   const resetForm = () => {
     setProviderName('')
     setCustomProviderName('')
@@ -175,6 +237,12 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setComputerUser('')
     setComputerPassword('')
     setShowComputerPassword(false)
+    setPhoneName('')
+    setPhoneOwner('')
+    setCustomPhoneOwner('')
+    setPhonePassword('')
+    setShowPhonePassword(false)
+    setIdentificationMethods([])
   }
 
   const addCustomField = () => {
@@ -193,6 +261,25 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
   const removeCustomField = (name: string) => {
     setCustomFields(customFields.filter(field => field.name !== name))
+  }
+
+  const addIdentificationMethod = () => {
+    const newMethod: IdentificationMethod = {
+      id: `method-${Date.now()}`,
+      method: 'biometrics',
+      type: 'fingerprint_scan',
+    }
+    setIdentificationMethods([...identificationMethods, newMethod])
+  }
+
+  const removeIdentificationMethod = (id: string) => {
+    setIdentificationMethods(identificationMethods.filter(m => m.id !== id))
+  }
+
+  const updateIdentificationMethod = (id: string, field: keyof IdentificationMethod, value: string) => {
+    setIdentificationMethods(identificationMethods.map(m => 
+      m.id === id ? { ...m, [field]: value } : m
+    ))
   }
 
   const handleDocumentDataExtracted = (data: Record<string, unknown>) => {
@@ -248,6 +335,20 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         alert('Please enter a password')
         return
       }
+    } else if (category === 'digital_assets' && subCategory === 'phone_access') {
+      // Validation for phone access-specific fields
+      if (!phoneName) {
+        alert('Please enter a phone name')
+        return
+      }
+      if (!phoneOwner && !customPhoneOwner) {
+        alert('Please select or enter a phone owner')
+        return
+      }
+      if (!phonePassword) {
+        alert('Please enter a password')
+        return
+      }
     } else {
       if (!finalProviderName) {
         alert('Please enter a provider name')
@@ -273,6 +374,14 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       data.device_name = deviceName
       data.computer_user = computerUser
       data.computer_password = computerPassword
+    } else if (category === 'digital_assets' && subCategory === 'phone_access') {
+      // For phone access, only include phone access-specific fields
+      data.phone_name = phoneName
+      data.phone_owner = phoneOwner === '__custom__' ? customPhoneOwner : phoneOwner
+      data.phone_password = phonePassword
+      if (identificationMethods.length > 0) {
+        data.identification_methods = identificationMethods
+      }
     } else {
       // For other categories, include standard fields
       data.provider_name = finalProviderName
@@ -317,7 +426,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Document Scanner Section */}
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
             <>
               <DocumentScanner
                 category={category}
@@ -347,7 +456,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </select>
           </div>
 
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Provider Name *
@@ -403,8 +512,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </div>
           )}
 
-          {/* Hide Account/Policy Type field for liabilities, email accounts and computer access */}
-          {category !== 'liabilities' && !(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
+          {/* Hide Account/Policy Type field for liabilities, email accounts, computer access, and phone access */}
+          {category !== 'liabilities' && !(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account/Policy Type
@@ -457,7 +566,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </div>
           )}
 
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account Number {category !== 'digital_assets' && '*'}
@@ -710,8 +819,208 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </>
           )}
 
+          {/* Phone access-specific fields */}
+          {category === 'digital_assets' && subCategory === 'phone_access' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Name *
+                </label>
+                <input
+                  type="text"
+                  value={phoneName}
+                  onChange={(e) => setPhoneName(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., John's iPhone, Mom's Samsung"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The name or description of the phone
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Owner *
+                </label>
+                {loadingFamilyMembers ? (
+                  <div className="input-field text-gray-500">Loading family members...</div>
+                ) : (
+                  <div className="space-y-2">
+                    <select
+                      value={phoneOwner}
+                      onChange={(e) => {
+                        setPhoneOwner(e.target.value)
+                        if (e.target.value !== '__custom__') {
+                          setCustomPhoneOwner('')
+                        }
+                      }}
+                      className="input-field"
+                      required={!customPhoneOwner}
+                    >
+                      <option value="">Select phone owner</option>
+                      {familyMembers.map((member) => (
+                        <option key={member.id} value={member.name}>
+                          {member.name}
+                        </option>
+                      ))}
+                      <option value="__custom__">Someone else</option>
+                    </select>
+                    {phoneOwner === '__custom__' && (
+                      <input
+                        type="text"
+                        value={customPhoneOwner}
+                        onChange={(e) => setCustomPhoneOwner(e.target.value)}
+                        className="input-field"
+                        placeholder="Enter phone owner name"
+                        required
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPhonePassword ? "text" : "password"}
+                    value={phonePassword}
+                    onChange={(e) => setPhonePassword(e.target.value)}
+                    className="input-field pr-10"
+                    placeholder="Enter phone password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPhonePassword(!showPhonePassword)}
+                    className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-gray-900"
+                  >
+                    {showPhonePassword ? (
+                      <span className="text-sm">Hide</span>
+                    ) : (
+                      <span className="text-sm">Show</span>
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Password will be obfuscated when viewing the asset
+                </p>
+              </div>
+
+              {/* Identification Methods */}
+              <div className="border-t border-gray-200 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Identification Methods</h3>
+                  <button
+                    type="button"
+                    onClick={addIdentificationMethod}
+                    className="btn-secondary text-sm"
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                    Add Method
+                  </button>
+                </div>
+                
+                {identificationMethods.length > 0 && (
+                  <div className="space-y-4">
+                    {identificationMethods.map((method, index) => (
+                      <div key={method.id} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <span className="text-sm font-medium text-gray-700">Method {index + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeIdentificationMethod(method.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Method Type
+                            </label>
+                            <select
+                              value={method.method}
+                              onChange={(e) => {
+                                const newMethod = e.target.value as 'biometrics' | 'screen_lock'
+                                updateIdentificationMethod(method.id, 'method', newMethod)
+                                // Reset type when method changes
+                                if (newMethod === 'biometrics') {
+                                  updateIdentificationMethod(method.id, 'type', 'fingerprint_scan')
+                                } else {
+                                  updateIdentificationMethod(method.id, 'type', 'pin')
+                                }
+                              }}
+                              className="input-field text-sm"
+                            >
+                              <option value="biometrics">Biometrics</option>
+                              <option value="screen_lock">Screen Lock</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              {method.method === 'biometrics' ? 'Biometric Type' : 'Screen Lock Type'}
+                            </label>
+                            {method.method === 'biometrics' ? (
+                              <select
+                                value={method.type}
+                                onChange={(e) => updateIdentificationMethod(method.id, 'type', e.target.value)}
+                                className="input-field text-sm"
+                              >
+                                <option value="fingerprint_scan">Fingerprint Scan</option>
+                                <option value="facial_recognition">Facial Recognition</option>
+                                <option value="iris_retinal_scan">Iris/Retinal Scan</option>
+                                <option value="voice_recognition">Voice Recognition</option>
+                              </select>
+                            ) : (
+                              <select
+                                value={method.type}
+                                onChange={(e) => updateIdentificationMethod(method.id, 'type', e.target.value)}
+                                className="input-field text-sm"
+                              >
+                                <option value="pin">PIN</option>
+                                <option value="pattern">Pattern</option>
+                              </select>
+                            )}
+                          </div>
+
+                          {method.method === 'screen_lock' && method.type === 'pin' && (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                                PIN
+                              </label>
+                              <input
+                                type="password"
+                                value={method.pinValue || ''}
+                                onChange={(e) => updateIdentificationMethod(method.id, 'pinValue', e.target.value)}
+                                className="input-field text-sm"
+                                placeholder="Enter PIN"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {identificationMethods.length === 0 && (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    No identification methods added yet. Click "Add Method" to add one.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+
           {/* Custom Fields */}
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
               
