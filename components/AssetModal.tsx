@@ -1000,7 +1000,10 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                                 value={method.pinValue || ''}
                                 onChange={(e) => updateIdentificationMethod(method.id, 'pinValue', e.target.value)}
                                 className="input-field text-sm"
-                                placeholder="Enter PIN"
+                                placeholder="Enter PIN (4-6 digits)"
+                                pattern="[0-9]{4,6}"
+                                maxLength={6}
+                                inputMode="numeric"
                               />
                             </div>
                           )}

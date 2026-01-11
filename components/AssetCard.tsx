@@ -14,6 +14,7 @@ interface AssetCardProps {
 export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [showPinMap, setShowPinMap] = useState<Record<number, boolean>>({})
 
   // Check if this is a digital asset email account
   const isEmailAccount = asset.category === 'digital_assets' && asset.type === 'email_accounts'
@@ -169,8 +170,16 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
                           </span>
                         </div>
                         {method.pinValue && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            PIN: {method.pinValue}
+                          <div className="mt-2 flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">
+                              PIN: {showPinMap[index] ? method.pinValue : '••••'}
+                            </span>
+                            <button
+                              onClick={() => setShowPinMap({ ...showPinMap, [index]: !showPinMap[index] })}
+                              className="text-xs text-indigo-600 hover:text-indigo-700 underline"
+                            >
+                              {showPinMap[index] ? 'Hide' : 'Show'}
+                            </button>
                           </div>
                         )}
                       </div>
