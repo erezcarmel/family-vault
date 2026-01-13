@@ -9,10 +9,10 @@ async function sendEmail({
   html: string
   text?: string
 }) {
-  const apiKey = process.env.RESEND_API_KEY
+  const apiKey = process.env.BREVO_API_KEY
 
   if (!apiKey) {
-    console.warn('RESEND_API_KEY not set. Email not sent. Email would be:', {
+    console.warn('BREVO_API_KEY not set. Email not sent. Email would be:', {
       to,
       subject,
       html,
@@ -20,23 +20,31 @@ async function sendEmail({
     return
   }
 
-  const response = await fetch('https://api.resend.com/emails', {
+  const emailFrom = process.env.EMAIL_FROM || 'Family Vault <noreply@familyvault.app>'
+  const fromMatch = emailFrom.match(/^(.+?)\s*<(.+)>$|^(.+)$/)
+  const senderName = fromMatch?.[1]?.trim() || fromMatch?.[3]?.trim() || 'Family Vault'
+  const senderEmail = fromMatch?.[2]?.trim() || fromMatch?.[3]?.trim() || 'noreply@familyvault.app'
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      'api-key': apiKey,
     },
     body: JSON.stringify({
-      from: process.env.EMAIL_FROM || 'Family Vault <noreply@familyvault.app>',
-      to: [to],
+      sender: {
+        name: senderName,
+        email: senderEmail,
+      },
+      to: [{ email: to }],
       subject,
-      html,
-      text,
+      htmlContent: html,
+      textContent: text,
     }),
   })
 
   if (!response.ok) {
-    const error = await response.json()
+    const error = await response.json().catch(() => ({ message: response.statusText }))
     throw new Error(`Failed to send email: ${error.message || response.statusText}`)
   }
 

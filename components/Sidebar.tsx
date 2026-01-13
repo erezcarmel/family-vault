@@ -18,9 +18,9 @@ import {
   faTimes,
   faVault,
   faUserTie,
-  faUserCog,
-  faChevronDown,
-  faChevronRight
+  faChevronRight,
+  faChevronLeft,
+  faCog
 } from '@fortawesome/free-solid-svg-icons'
 import { createClient } from '@/lib/supabase/client'
 import { getFamilyId, getUserRole } from '@/lib/db-helpers-client'
@@ -46,6 +46,7 @@ const nonAssetItems = [
 
 export default function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const [isAssetsExpanded, setIsAssetsExpanded] = useState(true)
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [assetCounts, setAssetCounts] = useState<Record<string, number>>({})
@@ -174,31 +175,48 @@ export default function Sidebar() {
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-40
-          w-64 bg-white border-r border-gray-200
-          transform transition-transform duration-300 ease-in-out
+          bg-white border-r border-gray-200
+          transform transition-all duration-300 ease-in-out
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isCollapsed ? 'w-20' : 'w-64'}
         `}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative">
           {/* Logo */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+          <div className={`border-b border-gray-200 transition-all duration-300 ${isCollapsed ? 'p-4' : 'p-6'}`}>
+            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
+              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <FontAwesomeIcon icon={faVault} className="text-white text-lg" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Family Vault</h1>
-                <p className="text-xs text-gray-500">Family Asset Management</p>
-              </div>
+              {!isCollapsed && (
+                <div className="transition-opacity duration-300">
+                  <h1 className="text-xl font-bold text-gray-900">Family Vault</h1>
+                  <p className="text-xs text-gray-500">Family Asset Management</p>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Collapse Toggle Button */}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden lg:flex absolute -right-3 top-6 bg-white border border-gray-200 rounded-full p-1 shadow-md hover:bg-indigo-50 transition-colors z-10 cursor-pointer"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <FontAwesomeIcon 
+              icon={isCollapsed ? faChevronRight : faChevronLeft} 
+              className="text-xs max-w-3 max-h-3"
+            />
+          </button>
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4">
             <ul className="space-y-2">
               {/* Dashboard */}
               {navigationItems.map((item) => {
-                const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                const isActive = item.href === '/dashboard' 
+                  ? pathname === item.href
+                  : pathname === item.href || pathname?.startsWith(item.href + '/')
                 const count = item.category ? (assetCounts[item.category] || 0) : null
                 
                 return (
@@ -207,7 +225,8 @@ export default function Sidebar() {
                       href={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`
-                        flex items-center justify-between px-4 py-3 rounded-lg
+                        flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} 
+                        ${isCollapsed ? 'px-3' : 'px-4'} py-3 rounded-lg relative
                         transition-colors duration-200
                         ${isActive
                           ? 'bg-indigo-50 text-indigo-600 font-medium'
@@ -215,11 +234,11 @@ export default function Sidebar() {
                         }
                       `}
                     >
-                      <div className="flex items-center space-x-3">
-                        <FontAwesomeIcon icon={item.icon} className="w-5" />
-                        <span>{item.label}</span>
+                      <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'}`}>
+                        <FontAwesomeIcon icon={item.icon} className="w-5 flex-shrink-0" />
+                        {!isCollapsed && <span>{item.label}</span>}
                       </div>
-                      {count !== null && (
+                      {!isCollapsed && count !== null && (
                         <span className={`
                           text-xs font-semibold px-2 py-1 rounded-full
                           ${isActive
@@ -236,66 +255,104 @@ export default function Sidebar() {
               })}
 
               {/* Family Assets - Collapsible Section */}
-              <li>
-                <button
-                  onClick={() => setIsAssetsExpanded(!isAssetsExpanded)}
-                  aria-expanded={isAssetsExpanded}
-                  aria-controls="family-assets-list"
-                  className="flex items-center justify-between px-4 py-3 rounded-lg w-full
-                    text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                >
-                  <div className="flex items-center space-x-3">
-                    <FontAwesomeIcon 
-                      icon={isAssetsExpanded ? faChevronDown : faChevronRight} 
-                      className="w-4 text-gray-500"
-                      aria-hidden="true"
-                    />
-                    <span className="font-medium">Family Assets</span>
-                  </div>
-                </button>
-                
-                {isAssetsExpanded && (
-                  <ul id="family-assets-list" className="mt-1 space-y-1">
-                    {assetItems.map((item) => {
-                      const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
-                      const count = item.category ? (assetCounts[item.category] || 0) : null
-                      
-                      return (
-                        <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className={`
-                              flex items-center justify-between px-4 py-3 rounded-lg ml-6
-                              transition-colors duration-200
-                              ${isActive
-                                ? 'bg-indigo-50 text-indigo-600 font-medium'
-                                : 'text-gray-700 hover:bg-gray-50'
-                              }
-                            `}
-                          >
-                            <div className="flex items-center space-x-3">
-                              <FontAwesomeIcon icon={item.icon} className="w-5" />
-                              <span>{item.label}</span>
-                            </div>
-                            {count !== null && (
-                              <span className={`
-                                text-xs font-semibold px-2 py-1 rounded-full
+              {!isCollapsed && (
+                <li>
+                  <button
+                    onClick={() => setIsAssetsExpanded(!isAssetsExpanded)}
+                    aria-expanded={isAssetsExpanded}
+                    aria-controls="family-assets-list"
+                    className="flex items-center justify-between px-4 py-3 rounded-lg w-full
+                      text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <FontAwesomeIcon 
+                        icon={faChevronRight} 
+                        className={`w-4 text-gray-500 transition-transform duration-300 ease-in-out ${
+                          isAssetsExpanded ? 'rotate-90' : 'rotate-0'
+                        }`}
+                        aria-hidden="true"
+                      />
+                      <span className="font-medium">Family Assets</span>
+                    </div>
+                  </button>
+                  
+                  <div
+                    id="family-assets-list"
+                    className={`
+                      overflow-hidden transition-all duration-300 ease-in-out
+                      ${isAssetsExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}
+                    `}
+                  >
+                    <ul className="mt-1 space-y-1">
+                      {assetItems.map((item) => {
+                        const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                        const count = item.category ? (assetCounts[item.category] || 0) : null
+                        
+                        return (
+                          <li key={item.href}>
+                            <Link
+                              href={item.href}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className={`
+                                flex items-center justify-between px-4 py-3 rounded-lg ml-6
+                                transition-colors duration-200
                                 ${isActive
-                                  ? 'bg-indigo-100 text-indigo-600'
-                                  : 'bg-gray-100 text-gray-600'
+                                  ? 'bg-indigo-50 text-indigo-600 font-medium'
+                                  : 'text-gray-700 hover:bg-gray-50'
                                 }
-                              `}>
-                                {count}
-                              </span>
-                            )}
-                          </Link>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </li>
+                              `}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <FontAwesomeIcon icon={item.icon} className="w-5" />
+                                <span>{item.label}</span>
+                              </div>
+                              {count !== null && (
+                                <span className={`
+                                  text-xs font-semibold px-2 py-1 rounded-full
+                                  ${isActive
+                                    ? 'bg-indigo-100 text-indigo-600'
+                                    : 'bg-gray-100 text-gray-600'
+                                  }
+                                `}>
+                                  {count}
+                                </span>
+                              )}
+                            </Link>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                </li>
+              )}
+              
+              {/* Asset Items - Shown directly when collapsed */}
+              {isCollapsed && (
+                <>
+                  {assetItems.map((item) => {
+                    const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                    
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={`
+                            flex items-center justify-center px-3 py-3 rounded-lg relative
+                            transition-colors duration-200
+                            ${isActive
+                              ? 'bg-indigo-50 text-indigo-600 font-medium'
+                              : 'text-gray-700 hover:bg-gray-50'
+                            }
+                          `}
+                        >
+                          <FontAwesomeIcon icon={item.icon} className="w-5" />
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </>
+              )}
 
               {/* Non-Asset Items */}
               {nonAssetItems.map((item) => {
@@ -308,7 +365,8 @@ export default function Sidebar() {
                       href={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`
-                        flex items-center justify-between px-4 py-3 rounded-lg
+                        flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} 
+                        ${isCollapsed ? 'px-3' : 'px-4'} py-3 rounded-lg relative
                         transition-colors duration-200
                         ${isActive
                           ? 'bg-indigo-50 text-indigo-600 font-medium'
@@ -316,11 +374,11 @@ export default function Sidebar() {
                         }
                       `}
                     >
-                      <div className="flex items-center space-x-3">
-                        <FontAwesomeIcon icon={item.icon} className="w-5" />
-                        <span>{item.label}</span>
+                      <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'}`}>
+                        <FontAwesomeIcon icon={item.icon} className="w-5 flex-shrink-0" />
+                        {!isCollapsed && <span>{item.label}</span>}
                       </div>
-                      {count !== null && (
+                      {!isCollapsed && count !== null && (
                         <span className={`
                           text-xs font-semibold px-2 py-1 rounded-full
                           ${isActive
@@ -335,41 +393,37 @@ export default function Sidebar() {
                   </li>
                 )
               })}
-              
-              {/* User Management (Admin Only) */}
-              {userRole === 'admin' && (
-                <li>
-                  <Link
-                    href="/dashboard/users"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`
-                      flex items-center justify-between px-4 py-3 rounded-lg
-                      transition-colors duration-200
-                      ${pathname === '/dashboard/users'
-                        ? 'bg-indigo-50 text-indigo-600 font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
-                      }
-                    `}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <FontAwesomeIcon icon={faUserCog} className="w-5" />
-                      <span>User Management</span>
-                    </div>
-                  </Link>
-                </li>
-              )}
             </ul>
           </nav>
 
-          {/* Sign Out */}
-          <div className="p-4 border-t border-gray-200">
+          {/* Settings and Sign Out */}
+          <div className={`border-t border-gray-200 space-y-2 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+            <Link
+              href="/dashboard/settings"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`
+                flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} 
+                ${isCollapsed ? 'px-3' : 'px-4'} py-3 rounded-lg w-full relative
+                transition-colors duration-200
+                ${pathname === '/dashboard/settings'
+                  ? 'bg-indigo-50 text-indigo-600 font-medium'
+                  : 'text-gray-700 hover:bg-gray-50'
+                }
+              `}
+            >
+              <FontAwesomeIcon icon={faCog} className="w-5 flex-shrink-0" />
+              {!isCollapsed && <span>Settings</span>}
+            </Link>
             <button
               onClick={handleSignOut}
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg w-full
-                text-red-600 hover:bg-red-50 transition-colors duration-200"
+              className={`
+                flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} 
+                ${isCollapsed ? 'px-3' : 'px-4'} py-3 rounded-lg w-full relative
+                text-red-600 hover:bg-red-50 transition-colors duration-200
+              `}
             >
-              <FontAwesomeIcon icon={faSignOutAlt} className="w-5" />
-              <span>Sign Out</span>
+              <FontAwesomeIcon icon={faSignOutAlt} className="w-5 flex-shrink-0" />
+              {!isCollapsed && <span>Sign Out</span>}
             </button>
           </div>
         </div>
