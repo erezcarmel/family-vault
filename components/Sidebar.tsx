@@ -146,7 +146,8 @@ export default function Sidebar() {
     if (isAssetPage || !countsLoaded) {
       loadAssetCounts()
     }
-  }, [pathname, countsLoaded])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
