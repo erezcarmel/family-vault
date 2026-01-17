@@ -12,12 +12,7 @@ interface CustomField {
   value: string
 }
 
-interface IdentificationMethod {
-  id: string
-  method: 'biometrics' | 'screen_lock'
-  type: string
-  pinValue?: string
-}
+
 
 interface AssetModalProps {
   isOpen: boolean
@@ -67,9 +62,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [phoneName, setPhoneName] = useState('')
   const [phoneOwner, setPhoneOwner] = useState('')
   const [customPhoneOwner, setCustomPhoneOwner] = useState('')
-  const [phonePassword, setPhonePassword] = useState('')
-  const [showPhonePassword, setShowPhonePassword] = useState(false)
-  const [identificationMethods, setIdentificationMethods] = useState<IdentificationMethod[]>([])
+  const [phonePin, setPhonePin] = useState('')
+  const [showPhonePin, setShowPhonePin] = useState(false)
   const [familyMembers, setFamilyMembers] = useState<Array<{ id: string; name: string }>>([])
   const [loadingFamilyMembers, setLoadingFamilyMembers] = useState(false)
   
@@ -112,10 +106,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       // Set phone access-specific fields if they exist
       if (asset.data.phone_name) setPhoneName(asset.data.phone_name)
       if (asset.data.phone_owner) setPhoneOwner(asset.data.phone_owner)
-      if (asset.data.phone_password) setPhonePassword(asset.data.phone_password)
-      if (asset.data.identification_methods) {
-        setIdentificationMethods(JSON.parse(JSON.stringify(asset.data.identification_methods)))
-      }
+      if (asset.data.phone_pin) setPhonePin(asset.data.phone_pin)
       
       // Set cloud storage-specific fields if they exist
       if (asset.data.cloud_provider) setCloudProvider(asset.data.cloud_provider)
@@ -128,7 +119,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                               'monthly_payment', 'term_length',
                               'email', 'password', 'recovery_email', 'notes',
                               'device_name', 'computer_user', 'computer_password',
-                              'phone_name', 'phone_owner', 'phone_password', 'identification_methods',
+                              'phone_name', 'phone_owner', 'phone_pin',
                               'cloud_provider', 'cloud_username', 'cloud_password']
       const customData = Object.entries(asset.data)
         .filter(([key]) => !standardFields.includes(key))
@@ -252,9 +243,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setPhoneName('')
     setPhoneOwner('')
     setCustomPhoneOwner('')
-    setPhonePassword('')
-    setShowPhonePassword(false)
-    setIdentificationMethods([])
+    setPhonePin('')
+    setShowPhonePin(false)
     setCloudProvider('')
     setCloudUsername('')
     setCloudPassword('')
@@ -279,24 +269,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setCustomFields(customFields.filter(field => field.name !== name))
   }
 
-  const addIdentificationMethod = () => {
-    const newMethod: IdentificationMethod = {
-      id: `method-${Date.now()}`,
-      method: 'biometrics',
-      type: 'fingerprint_scan',
-    }
-    setIdentificationMethods([...identificationMethods, newMethod])
-  }
 
-  const removeIdentificationMethod = (id: string) => {
-    setIdentificationMethods(identificationMethods.filter(m => m.id !== id))
-  }
-
-  const updateIdentificationMethod = (id: string, field: keyof IdentificationMethod, value: string) => {
-    setIdentificationMethods(identificationMethods.map(m => 
-      m.id === id ? { ...m, [field]: value } : m
-    ))
-  }
 
   const handleDocumentDataExtracted = (data: Record<string, unknown>) => {
     // Set main fields
@@ -361,8 +334,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         alert('Please select or enter a phone owner')
         return
       }
-      if (!phonePassword) {
-        alert('Please enter a password')
+      if (!phonePin) {
+        alert('Please enter a PIN code')
         return
       }
     } else if (category === 'digital_assets' && subCategory === 'cloud_storage') {
@@ -408,10 +381,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       // For phone access, only include phone access-specific fields
       data.phone_name = phoneName
       data.phone_owner = phoneOwner === '__custom__' ? customPhoneOwner : phoneOwner
-      data.phone_password = phonePassword
-      if (identificationMethods.length > 0) {
-        data.identification_methods = identificationMethods
-      }
+      data.phone_pin = phonePin
     } else if (category === 'digital_assets' && subCategory === 'cloud_storage') {
       // For cloud storage, only include cloud storage-specific fields
       data.cloud_provider = cloudProvider
@@ -917,23 +887,23 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password *
+                  PIN Code *
                 </label>
                 <div className="relative">
                   <input
-                    type={showPhonePassword ? "text" : "password"}
-                    value={phonePassword}
-                    onChange={(e) => setPhonePassword(e.target.value)}
+                    type={showPhonePin ? "text" : "password"}
+                    value={phonePin}
+                    onChange={(e) => setPhonePin(e.target.value)}
                     className="input-field pr-10"
-                    placeholder="Enter phone password"
+                    placeholder="Enter phone PIN code"
                     required
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPhonePassword(!showPhonePassword)}
+                    onClick={() => setShowPhonePin(!showPhonePin)}
                     className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-gray-900"
                   >
-                    {showPhonePassword ? (
+                    {showPhonePin ? (
                       <span className="text-sm">Hide</span>
                     ) : (
                       <span className="text-sm">Show</span>
@@ -941,118 +911,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Password will be obfuscated when viewing the asset
+                  PIN code will be obfuscated when viewing the asset
                 </p>
-              </div>
-
-              {/* Identification Methods */}
-              <div className="border-t border-gray-200 pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Identification Methods</h3>
-                  <button
-                    type="button"
-                    onClick={addIdentificationMethod}
-                    className="btn-secondary text-sm"
-                  >
-                    <FontAwesomeIcon icon={faPlus} className="mr-2" />
-                    Add Method
-                  </button>
-                </div>
-                
-                {identificationMethods.length > 0 && (
-                  <div className="space-y-4">
-                    {identificationMethods.map((method, index) => (
-                      <div key={method.id} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <span className="text-sm font-medium text-gray-700">Method {index + 1}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeIdentificationMethod(method.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Method Type
-                            </label>
-                            <select
-                              value={method.method}
-                              onChange={(e) => {
-                                const newMethod = e.target.value as 'biometrics' | 'screen_lock'
-                                updateIdentificationMethod(method.id, 'method', newMethod)
-                                // Reset type when method changes
-                                if (newMethod === 'biometrics') {
-                                  updateIdentificationMethod(method.id, 'type', 'fingerprint_scan')
-                                } else {
-                                  updateIdentificationMethod(method.id, 'type', 'pin')
-                                }
-                              }}
-                              className="input-field text-sm"
-                            >
-                              <option value="biometrics">Biometrics</option>
-                              <option value="screen_lock">Screen Lock</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              {method.method === 'biometrics' ? 'Biometric Type' : 'Screen Lock Type'}
-                            </label>
-                            {method.method === 'biometrics' ? (
-                              <select
-                                value={method.type}
-                                onChange={(e) => updateIdentificationMethod(method.id, 'type', e.target.value)}
-                                className="input-field text-sm"
-                              >
-                                <option value="fingerprint_scan">Fingerprint Scan</option>
-                                <option value="facial_recognition">Facial Recognition</option>
-                                <option value="iris_retinal_scan">Iris/Retinal Scan</option>
-                                <option value="voice_recognition">Voice Recognition</option>
-                              </select>
-                            ) : (
-                              <select
-                                value={method.type}
-                                onChange={(e) => updateIdentificationMethod(method.id, 'type', e.target.value)}
-                                className="input-field text-sm"
-                              >
-                                <option value="pin">PIN</option>
-                                <option value="pattern">Pattern</option>
-                              </select>
-                            )}
-                          </div>
-
-                          {method.method === 'screen_lock' && method.type === 'pin' && (
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">
-                                PIN
-                              </label>
-                              <input
-                                type="password"
-                                value={method.pinValue || ''}
-                                onChange={(e) => updateIdentificationMethod(method.id, 'pinValue', e.target.value)}
-                                className="input-field text-sm"
-                                placeholder="Enter PIN (4-6 digits)"
-                                pattern="[0-9]{4,6}"
-                                maxLength={6}
-                                inputMode="numeric"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {identificationMethods.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    No identification methods added yet. Click "Add Method" to add one.
-                  </p>
-                )}
               </div>
             </>
           )}
