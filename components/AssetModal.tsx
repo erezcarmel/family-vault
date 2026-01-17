@@ -13,12 +13,7 @@ interface CustomField {
   value: string
 }
 
-interface IdentificationMethod {
-  id: string
-  method: 'biometrics' | 'screen_lock'
-  type: string
-  pinValue?: string
-}
+
 
 interface AssetModalProps {
   isOpen: boolean
