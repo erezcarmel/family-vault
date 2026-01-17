@@ -78,7 +78,7 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*;pdf/*"
         onChange={handleFileUpload}
         className="hidden"
       />
