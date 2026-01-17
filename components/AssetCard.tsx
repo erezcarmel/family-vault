@@ -79,7 +79,7 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
           ) : isPhoneAccess ? (
             <>
               <h3 className="text-lg font-semibold text-gray-900">{asset.data.phone_name}</h3>
-              <p className="text-sm text-gray-600 mt-1">Phone Access</p>
+              <p className="text-sm text-gray-600 mt-1">Mobile Phone</p>
               {asset.data.phone_owner && (
                 <p className="text-xs text-gray-500 mt-1">Owner: {asset.data.phone_owner}</p>
               )}
