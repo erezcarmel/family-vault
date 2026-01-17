@@ -71,7 +71,7 @@ export default function Sidebar() {
       }
     }
     loadUserRole()
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     const loadAssetCounts = async () => {
@@ -146,7 +146,7 @@ export default function Sidebar() {
     if (isAssetPage || !countsLoaded) {
       loadAssetCounts()
     }
-  }, [supabase, pathname])
+  }, [pathname, countsLoaded])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
