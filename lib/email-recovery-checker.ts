@@ -30,7 +30,7 @@ export async function checkEmailRecoveryStatus(
 
     // Find the email asset with matching email
     const emailAsset = emailAssets?.find(
-      (asset: Asset) => asset.data.email === emailAddress
+      (asset) => asset.data.email === emailAddress
     )
 
     if (!emailAsset) {
