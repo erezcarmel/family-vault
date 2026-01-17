@@ -49,6 +49,8 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const PRIMARY_LIABILITY_FIELDS_COUNT = 2
 
   // Check email recovery status for custom email fields (only for non-email assets)
+  // Note: This runs when asset or customFields change. Since AssetCard displays saved data,
+  // this typically only runs once on mount or when switching between assets, not during editing.
   useEffect(() => {
     if (isEmailAccount) return // Skip for email assets themselves
 

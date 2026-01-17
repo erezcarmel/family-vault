@@ -153,6 +153,10 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   }, [isOpen])
 
   // Check email recovery status for custom fields
+  // Note: This runs when customFields array changes during form editing.
+  // Since users typically don't add many email fields at once, and we use Promise.all
+  // for parallel checks, the performance impact is minimal. If needed, a debounce
+  // could be added in the future for forms with many dynamic email fields.
   useEffect(() => {
     const isEmailAsset = category === 'digital_assets' && subCategory === 'email_accounts'
     if (isEmailAsset) return // Skip for email assets themselves

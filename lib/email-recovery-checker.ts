@@ -50,6 +50,10 @@ export async function checkEmailRecoveryStatus(
  * Checks if a field name is likely to be an email field
  * @param fieldName - The field name to check
  * @returns true if the field name suggests it contains an email address
+ * 
+ * Note: Uses a whitelist approach instead of pattern matching to avoid false positives.
+ * For example, a field named "email_notification_enabled" shouldn't be treated as an email field.
+ * The whitelist includes common variations used in forms and databases.
  */
 export function isEmailField(fieldName: string): boolean {
   const normalizedName = fieldName.toLowerCase().trim()
@@ -68,13 +72,15 @@ export function isEmailField(fieldName: string): boolean {
   return emailFieldPatterns.includes(normalizedName)
 }
 
+// HTML5 email validation pattern - follows RFC 5322 standard
+// Compiled once as a constant to avoid recompilation on each validation
+const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+
 /**
  * Validates if a string is a valid email format
  * @param value - The value to validate
  * @returns true if the value is a valid email format
  */
 export function isValidEmail(value: string): boolean {
-  // HTML5 email validation pattern - follows RFC 5322 standard
-  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
-  return emailRegex.test(value)
+  return EMAIL_REGEX.test(value)
 }
