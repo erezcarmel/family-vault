@@ -25,9 +25,12 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   // Check if this is a phone access asset
   const isPhoneAccess = asset.category === 'digital_assets' && asset.type === 'phone_access'
   
+  // Check if this is a cloud storage asset
+  const isCloudStorage = asset.category === 'digital_assets' && asset.type === 'cloud_storage'
+  
   // Get custom fields (all fields except the main ones and liability-specific ones)
   const customFields = Object.entries(asset.data).filter(
-    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_password', 'identification_methods'].includes(key)
+    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_password', 'identification_methods', 'cloud_provider', 'cloud_username', 'cloud_password'].includes(key)
   )
   
   // Check if this is a liability
@@ -88,6 +91,27 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
                 <div className="mt-2 flex items-center space-x-2">
                   <p className="text-xs text-gray-500">
                     Password: {showPassword ? asset.data.phone_password : '••••••••'}
+                  </p>
+                  <button
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-xs text-indigo-600 hover:text-indigo-700 underline"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : isCloudStorage ? (
+            <>
+              <h3 className="text-lg font-semibold text-gray-900">{asset.data.cloud_provider}</h3>
+              <p className="text-sm text-gray-600 mt-1">Cloud Storage</p>
+              {asset.data.cloud_username && (
+                <p className="text-xs text-gray-500 mt-1">Username: {asset.data.cloud_username}</p>
+              )}
+              {asset.data.cloud_password && (
+                <div className="mt-2 flex items-center space-x-2">
+                  <p className="text-xs text-gray-500">
+                    Password: {showPassword ? asset.data.cloud_password : '••••••••'}
                   </p>
                   <button
                     onClick={() => setShowPassword(!showPassword)}
