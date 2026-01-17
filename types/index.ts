@@ -84,6 +84,7 @@ export type AssetType =
   | 'email_accounts'
   | 'computer_access'
   | 'phone_access'
+  | 'social_accounts'
 
 export interface AssetData {
   provider_name: string

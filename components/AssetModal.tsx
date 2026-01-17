@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTimes, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faTimes, faPlus, faTrash, faEye, faEyeSlash, faCheck, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
+import * as BrandIcons from '@fortawesome/free-brands-svg-icons'
 import DocumentScanner from './DocumentScanner'
+import { detectSocialNetwork, validateUrl, normalizeUrl } from '@/lib/social-network-detector'
 import type { Asset, AssetType, Provider, AccountType } from '@/types'
 
 interface CustomField {
@@ -73,6 +75,16 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [familyMembers, setFamilyMembers] = useState<Array<{ id: string; name: string }>>([])
   const [loadingFamilyMembers, setLoadingFamilyMembers] = useState(false)
   
+  // Social account-specific fields
+  const [profileLink, setProfileLink] = useState('')
+  const [detectedNetwork, setDetectedNetwork] = useState<any>(null)
+  const [socialEmail, setSocialEmail] = useState('')
+  const [socialPassword, setSocialPassword] = useState('')
+  const [socialPasswordEnabled, setSocialPasswordEnabled] = useState(false)
+  const [showSocialPassword, setShowSocialPassword] = useState(false)
+  const [recoveryEmailWarning, setRecoveryEmailWarning] = useState<string | null>(null)
+  const [checkingRecoveryEmail, setCheckingRecoveryEmail] = useState(false)
+  
   const supabase = createClient()
 
   useEffect(() => {
@@ -111,13 +123,26 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         setIdentificationMethods(JSON.parse(JSON.stringify(asset.data.identification_methods)))
       }
       
+      // Set social account-specific fields if they exist
+      if (asset.data.profile_link) {
+        setProfileLink(asset.data.profile_link)
+        const network = detectSocialNetwork(asset.data.profile_link)
+        setDetectedNetwork(network)
+      }
+      if (asset.data.social_email) setSocialEmail(asset.data.social_email)
+      if (asset.data.social_password) {
+        setSocialPassword(asset.data.social_password)
+        setSocialPasswordEnabled(true)
+      }
+      
       // Extract custom fields (excluding standard fields)
       const standardFields = ['provider_name', 'account_type', 'account_number', 
                               'loan_amount', 'interest_rate', 'loan_term', 
                               'monthly_payment', 'term_length',
                               'email', 'password', 'recovery_email', 'notes',
                               'device_name', 'computer_user', 'computer_password',
-                              'phone_name', 'phone_owner', 'phone_password', 'identification_methods']
+                              'phone_name', 'phone_owner', 'phone_password', 'identification_methods',
+                              'profile_link', 'social_email', 'social_password']
       const customData = Object.entries(asset.data)
         .filter(([key]) => !standardFields.includes(key))
         .map(([name, value]) => ({ name, value: String(value) }))
@@ -243,6 +268,14 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setPhonePassword('')
     setShowPhonePassword(false)
     setIdentificationMethods([])
+    setProfileLink('')
+    setDetectedNetwork(null)
+    setSocialEmail('')
+    setSocialPassword('')
+    setSocialPasswordEnabled(false)
+    setShowSocialPassword(false)
+    setRecoveryEmailWarning(null)
+    setCheckingRecoveryEmail(false)
   }
 
   const addCustomField = () => {
@@ -280,6 +313,78 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setIdentificationMethods(identificationMethods.map(m => 
       m.id === id ? { ...m, [field]: value } : m
     ))
+  }
+
+  const handleApplyProfileLink = () => {
+    if (!profileLink) {
+      setDetectedNetwork(null)
+      return
+    }
+    
+    if (!validateUrl(profileLink)) {
+      alert('Please enter a valid URL')
+      return
+    }
+    
+    const normalizedUrl = normalizeUrl(profileLink)
+    setProfileLink(normalizedUrl)
+    
+    const network = detectSocialNetwork(normalizedUrl)
+    setDetectedNetwork(network)
+    
+    if (!network) {
+      alert('Could not detect social network from this URL. The link will still be saved.')
+    }
+  }
+
+  const checkRecoveryEmail = async (email: string) => {
+    if (!email) {
+      setRecoveryEmailWarning(null)
+      return
+    }
+    
+    setCheckingRecoveryEmail(true)
+    setRecoveryEmailWarning(null)
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Get family ID
+        const { data: family } = await supabase
+          .from('families')
+          .select('id')
+          .eq('user_id', user.id)
+          .single()
+
+        if (family) {
+          // Check if there's an email asset with this email address
+          const { data: emailAssets, error } = await supabase
+            .from('assets')
+            .select('data')
+            .eq('family_id', family.id)
+            .eq('category', 'digital_assets')
+            .eq('type', 'email_accounts')
+
+          if (error) throw error
+
+          // Find email asset matching the social account email
+          const matchingEmailAsset = emailAssets?.find(
+            (asset: any) => asset.data.email === email
+          )
+
+          if (!matchingEmailAsset) {
+            setRecoveryEmailWarning('⚠️ No email asset found for this email address. Consider creating one for better account recovery.')
+          } else if (!matchingEmailAsset.data.recovery_email) {
+            setRecoveryEmailWarning('⚠️ The email asset for this address does not have a recovery email defined. Consider adding one for better security.')
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking recovery email:', error)
+    } finally {
+      setCheckingRecoveryEmail(false)
+    }
   }
 
   const handleDocumentDataExtracted = (data: Record<string, unknown>) => {
@@ -349,6 +454,20 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         alert('Please enter a password')
         return
       }
+    } else if (category === 'digital_assets' && subCategory === 'social_accounts') {
+      // Validation for social account-specific fields
+      if (!profileLink) {
+        alert('Please enter a profile link')
+        return
+      }
+      if (!validateUrl(profileLink)) {
+        alert('Please enter a valid URL for the profile link')
+        return
+      }
+      if (!socialEmail) {
+        alert('Please enter an email address associated with this social account')
+        return
+      }
     } else {
       if (!finalProviderName) {
         alert('Please enter a provider name')
@@ -381,6 +500,18 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       data.phone_password = phonePassword
       if (identificationMethods.length > 0) {
         data.identification_methods = identificationMethods
+      }
+    } else if (category === 'digital_assets' && subCategory === 'social_accounts') {
+      // For social accounts, only include social account-specific fields
+      data.profile_link = normalizeUrl(profileLink)
+      data.social_email = socialEmail
+      if (socialPasswordEnabled && socialPassword) {
+        data.social_password = socialPassword
+      }
+      if (detectedNetwork) {
+        data.network_name = detectedNetwork.name
+        data.network_icon = detectedNetwork.icon
+        data.network_color = detectedNetwork.color
       }
     } else {
       // For other categories, include standard fields
@@ -426,7 +557,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Document Scanner Section */}
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'social_accounts')) && (
             <>
               <DocumentScanner
                 category={category}
@@ -456,7 +587,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </select>
           </div>
 
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'social_accounts')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Provider Name *
@@ -512,8 +643,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </div>
           )}
 
-          {/* Hide Account/Policy Type field for liabilities, email accounts, computer access, and phone access */}
-          {category !== 'liabilities' && !(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {/* Hide Account/Policy Type field for liabilities, email accounts, computer access, phone access, and social accounts */}
+          {category !== 'liabilities' && !(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'social_accounts')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account/Policy Type
@@ -566,7 +697,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </div>
           )}
 
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'social_accounts')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account Number {category !== 'digital_assets' && '*'}
@@ -1022,8 +1153,139 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </>
           )}
 
+          {/* Social account-specific fields */}
+          {category === 'digital_assets' && subCategory === 'social_accounts' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Profile Link *
+                </label>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={profileLink}
+                      onChange={(e) => setProfileLink(e.target.value)}
+                      className="input-field flex-1"
+                      placeholder="e.g., https://facebook.com/yourprofile"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyProfileLink}
+                      className="btn-primary px-6"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  {detectedNetwork && (
+                    <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                      <FontAwesomeIcon 
+                        icon={(BrandIcons as any)[detectedNetwork.icon] || faCheck}
+                        className="text-2xl"
+                        style={{ color: detectedNetwork.color }}
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          <FontAwesomeIcon icon={faCheck} className="text-green-600 mr-1" />
+                          {detectedNetwork.name} detected
+                        </p>
+                        <p className="text-xs text-gray-600">{profileLink}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the full URL to your social media profile and click "Apply" to detect the network
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={socialEmail}
+                  onChange={(e) => {
+                    setSocialEmail(e.target.value)
+                  }}
+                  onBlur={(e) => checkRecoveryEmail(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., user@example.com"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The email address associated with this social account
+                </p>
+                {checkingRecoveryEmail && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Checking recovery email...
+                  </div>
+                )}
+                {recoveryEmailWarning && (
+                  <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-600 mt-0.5" />
+                    <p className="text-sm text-red-800">{recoveryEmailWarning}</p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password (Optional)
+                </label>
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="enable-social-password"
+                      checked={socialPasswordEnabled}
+                      onChange={(e) => {
+                        setSocialPasswordEnabled(e.target.checked)
+                        if (!e.target.checked) {
+                          setSocialPassword('')
+                        }
+                      }}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="enable-social-password" className="ml-2 text-sm text-gray-700">
+                      Include password field
+                    </label>
+                  </div>
+                  {socialPasswordEnabled && (
+                    <>
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-sm text-yellow-800">
+                          ⚠️ <strong>Warning:</strong> Saving passwords is not recommended for security reasons. 
+                          Consider using a dedicated password manager instead.
+                        </p>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type={showSocialPassword ? "text" : "password"}
+                          value={socialPassword}
+                          onChange={(e) => setSocialPassword(e.target.value)}
+                          className="input-field pr-10"
+                          placeholder="Enter password (not recommended)"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSocialPassword(!showSocialPassword)}
+                          className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-gray-900"
+                        >
+                          <FontAwesomeIcon icon={showSocialPassword ? faEyeSlash : faEye} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Custom Fields */}
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'social_accounts')) && (
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
               
