@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTimes, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faTimes, faPlus, faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
+import { checkEmailRecoveryStatus, isEmailField, isValidEmail } from '@/lib/email-recovery-checker'
 import DocumentScanner from './DocumentScanner'
 import type { Asset, AssetType, Provider, AccountType } from '@/types'
 
@@ -67,6 +68,10 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [familyMembers, setFamilyMembers] = useState<Array<{ id: string; name: string }>>([])
   const [loadingFamilyMembers, setLoadingFamilyMembers] = useState(false)
   
+  // Email recovery status for custom fields
+  const [emailRecoveryStatus, setEmailRecoveryStatus] = useState<Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }>>({})
+  const [familyId, setFamilyId] = useState<string | null>(null)
+  
   const supabase = createClient()
 
   useEffect(() => {
@@ -117,6 +122,72 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       resetForm()
     }
   }, [asset, isOpen])
+
+  // Get family ID when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const getFamilyId = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: family } = await supabase
+            .from('families')
+            .select('id')
+            .eq('user_id', user.id)
+            .single()
+          if (family) {
+            setFamilyId(family.id)
+          }
+        }
+      }
+      getFamilyId()
+    }
+  }, [isOpen])
+
+  // Check email recovery status for custom fields
+  // Note: This runs when customFields array changes during form editing.
+  // Since users typically don't add many email fields at once, and we use Promise.all
+  // for parallel checks, the performance impact is minimal. If needed, a debounce
+  // could be added in the future for forms with many dynamic email fields.
+  useEffect(() => {
+    // Check if this is an email asset (using string literals for consistency with existing codebase patterns)
+    const isEmailAsset = category === 'digital_assets' && subCategory === 'email_accounts'
+    if (isEmailAsset) return // Skip for email assets themselves
+    if (!familyId) return // Wait for family ID to be loaded
+
+    const checkEmailFields = async () => {
+      // Find all email fields first
+      const emailFieldsToCheck = customFields.filter(
+        field => isEmailField(field.name) && isValidEmail(field.value)
+      )
+      
+      if (emailFieldsToCheck.length === 0) {
+        setEmailRecoveryStatus({})
+        return
+      }
+
+      // Check all email fields in parallel for better performance
+      const statusChecks = emailFieldsToCheck.map(async (field) => {
+        const status = await checkEmailRecoveryStatus(
+          supabase,
+          familyId,
+          field.value
+        )
+        return { fieldName: field.name, status }
+      })
+
+      const results = await Promise.all(statusChecks)
+      
+      // Convert results to status map
+      const statusMap: Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }> = {}
+      results.forEach(({ fieldName, status }) => {
+        statusMap[fieldName] = status
+      })
+      
+      setEmailRecoveryStatus(statusMap)
+    }
+
+    checkEmailFields()
+  }, [customFields, category, subCategory, familyId])
 
   // Load providers and account types when sub-category changes
   useEffect(() => {
@@ -252,8 +323,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const removeCustomField = (name: string) => {
     setCustomFields(customFields.filter(field => field.name !== name))
   }
-
-
 
   const handleDocumentDataExtracted = (data: Record<string, unknown>) => {
     // Set main fields
@@ -889,21 +958,46 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
               
               {customFields.length > 0 && (
                 <div className="space-y-2 mb-4">
-                  {customFields.map((field, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                      <div className="flex-1">
-                        <span className="text-sm font-medium text-gray-700">{field.name}:</span>
-                        <span className="text-sm text-gray-900 ml-2">{field.value}</span>
+                  {customFields.map((field, index) => {
+                    const isEmail = isEmailField(field.name) && isValidEmail(field.value)
+                    const emailStatus = emailRecoveryStatus[field.name]
+                    const shouldShowWarning = isEmail && emailStatus && (!emailStatus.hasEmailAsset || !emailStatus.hasRecoveryEmail)
+                    
+                    return (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                        <div className="flex-1 flex items-center gap-2">
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-700">{field.name}:</span>
+                            <span className={`text-sm ml-2 ${shouldShowWarning ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
+                              {field.value}
+                            </span>
+                          </div>
+                          {shouldShowWarning && (
+                            <div className="group relative">
+                              <FontAwesomeIcon 
+                                icon={faExclamationTriangle} 
+                                className="text-red-600 cursor-help"
+                              />
+                              <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+                                {!emailStatus.hasEmailAsset ? (
+                                  'This email has no corresponding email asset. Without a recovery email, password recovery may not be possible.'
+                                ) : (
+                                  'This email asset exists but has no recovery email defined. Without a recovery email and password, account access may be lost.'
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomField(field.name)}
+                          className="text-red-600 hover:text-red-700 ml-2"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeCustomField(field.name)}
-                        className="text-red-600 hover:text-red-700 ml-2"
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
 
