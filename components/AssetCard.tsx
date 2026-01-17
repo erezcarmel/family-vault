@@ -14,7 +14,6 @@ interface AssetCardProps {
 export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [showPinMap, setShowPinMap] = useState<Record<number, boolean>>({})
 
   // Check if this is a digital asset email account
   const isEmailAccount = asset.category === 'digital_assets' && asset.type === 'email_accounts'
@@ -27,7 +26,7 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   
   // Get custom fields (all fields except the main ones and liability-specific ones)
   const customFields = Object.entries(asset.data).filter(
-    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_password', 'identification_methods'].includes(key)
+    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_pin'].includes(key)
   )
   
   // Check if this is a liability
@@ -84,10 +83,10 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
               {asset.data.phone_owner && (
                 <p className="text-xs text-gray-500 mt-1">Owner: {asset.data.phone_owner}</p>
               )}
-              {asset.data.phone_password && (
+              {asset.data.phone_pin && (
                 <div className="mt-2 flex items-center space-x-2">
                   <p className="text-xs text-gray-500">
-                    Password: {showPassword ? asset.data.phone_password : '••••••••'}
+                    PIN Code: {showPassword ? asset.data.phone_pin : '••••••••'}
                   </p>
                   <button
                     onClick={() => setShowPassword(!showPassword)}
@@ -131,7 +130,7 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
         </div>
       </div>
 
-      {(customFields.length > 0 || liabilityFields.length > PRIMARY_LIABILITY_FIELDS_COUNT || (isEmailAccount && asset.data.notes) || (isPhoneAccess && asset.data.identification_methods && Array.isArray(asset.data.identification_methods) && asset.data.identification_methods.length > 0)) && (
+      {(customFields.length > 0 || liabilityFields.length > PRIMARY_LIABILITY_FIELDS_COUNT || (isEmailAccount && asset.data.notes)) && (
         <div className="mt-4">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -153,38 +152,6 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
                 <div className="text-sm">
                   <span className="text-gray-600">Notes:</span>
                   <p className="text-gray-900 mt-1 whitespace-pre-wrap">{String(asset.data.notes)}</p>
-                </div>
-              )}
-              {isPhoneAccess && asset.data.identification_methods && Array.isArray(asset.data.identification_methods) && asset.data.identification_methods.length > 0 && (
-                <div className="text-sm">
-                  <span className="text-gray-600 font-medium">Identification Methods:</span>
-                  <div className="mt-2 space-y-2">
-                    {asset.data.identification_methods.map((method: any, index: number) => (
-                      <div key={index} className="bg-white rounded-lg p-2 border border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-gray-700">
-                            {method.method === 'biometrics' ? 'Biometrics' : 'Screen Lock'}
-                          </span>
-                          <span className="text-xs text-gray-600">
-                            {method.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                          </span>
-                        </div>
-                        {method.pinValue && (
-                          <div className="mt-2 flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">
-                              PIN: {showPinMap[index] ? method.pinValue : '••••'}
-                            </span>
-                            <button
-                              onClick={() => setShowPinMap({ ...showPinMap, [index]: !showPinMap[index] })}
-                              className="text-xs text-indigo-600 hover:text-indigo-700 underline"
-                            >
-                              {showPinMap[index] ? 'Hide' : 'Show'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
               {customFields.map(([key, value]) => (
