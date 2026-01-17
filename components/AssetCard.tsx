@@ -2,7 +2,7 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEdit, faTrash, faChevronDown, faChevronUp, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { checkEmailRecoveryStatus, isEmailField, isValidEmail } from '@/lib/email-recovery-checker'
 import type { Asset } from '@/types'
@@ -29,9 +29,11 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const isPhoneAccess = asset.category === 'digital_assets' && asset.type === 'phone_access'
   
   // Get custom fields (all fields except the main ones and liability-specific ones)
-  const customFields = Object.entries(asset.data).filter(
-    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_pin'].includes(key)
-  )
+  const customFields = useMemo(() => {
+    return Object.entries(asset.data).filter(
+      ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_pin'].includes(key)
+    )
+  }, [asset.data])
   
   // Check if this is a liability
   const isLiability = asset.category === 'liabilities'
