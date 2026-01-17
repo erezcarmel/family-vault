@@ -11,8 +11,18 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   
   const lowerUrl = url.toLowerCase()
   
+  // Parse URL to get hostname
+  let hostname = ''
+  try {
+    const urlObj = new URL(lowerUrl.startsWith('http') ? lowerUrl : `https://${lowerUrl}`)
+    hostname = urlObj.hostname.replace(/^www\./, '')
+  } catch {
+    // If URL parsing fails, try simple string matching
+    hostname = lowerUrl
+  }
+  
   // Facebook
-  if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.com') || lowerUrl.includes('fb.me')) {
+  if (hostname === 'facebook.com' || hostname === 'fb.com' || hostname === 'fb.me' || hostname.endsWith('.facebook.com')) {
     return {
       name: 'Facebook',
       icon: 'faFacebook',
@@ -21,7 +31,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // Twitter / X
-  if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) {
+  if (hostname === 'twitter.com' || hostname === 'x.com' || hostname.endsWith('.twitter.com') || hostname.endsWith('.x.com')) {
     return {
       name: 'Twitter / X',
       icon: 'faXTwitter',
@@ -30,7 +40,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // Instagram
-  if (lowerUrl.includes('instagram.com')) {
+  if (hostname === 'instagram.com' || hostname.endsWith('.instagram.com')) {
     return {
       name: 'Instagram',
       icon: 'faInstagram',
@@ -39,7 +49,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // LinkedIn
-  if (lowerUrl.includes('linkedin.com')) {
+  if (hostname === 'linkedin.com' || hostname.endsWith('.linkedin.com')) {
     return {
       name: 'LinkedIn',
       icon: 'faLinkedin',
@@ -48,7 +58,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // YouTube
-  if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+  if (hostname === 'youtube.com' || hostname === 'youtu.be' || hostname.endsWith('.youtube.com')) {
     return {
       name: 'YouTube',
       icon: 'faYoutube',
@@ -57,7 +67,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // TikTok
-  if (lowerUrl.includes('tiktok.com')) {
+  if (hostname === 'tiktok.com' || hostname.endsWith('.tiktok.com')) {
     return {
       name: 'TikTok',
       icon: 'faTiktok',
@@ -66,7 +76,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // Snapchat
-  if (lowerUrl.includes('snapchat.com')) {
+  if (hostname === 'snapchat.com' || hostname.endsWith('.snapchat.com')) {
     return {
       name: 'Snapchat',
       icon: 'faSnapchat',
@@ -75,7 +85,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // Pinterest
-  if (lowerUrl.includes('pinterest.com')) {
+  if (hostname === 'pinterest.com' || hostname.endsWith('.pinterest.com')) {
     return {
       name: 'Pinterest',
       icon: 'faPinterest',
@@ -84,7 +94,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // Reddit
-  if (lowerUrl.includes('reddit.com')) {
+  if (hostname === 'reddit.com' || hostname.endsWith('.reddit.com')) {
     return {
       name: 'Reddit',
       icon: 'faReddit',
@@ -93,7 +103,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // WhatsApp
-  if (lowerUrl.includes('whatsapp.com') || lowerUrl.includes('wa.me')) {
+  if (hostname === 'whatsapp.com' || hostname === 'wa.me' || hostname.endsWith('.whatsapp.com')) {
     return {
       name: 'WhatsApp',
       icon: 'faWhatsapp',
@@ -102,7 +112,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // Telegram
-  if (lowerUrl.includes('telegram.org') || lowerUrl.includes('t.me')) {
+  if (hostname === 'telegram.org' || hostname === 't.me' || hostname.endsWith('.telegram.org')) {
     return {
       name: 'Telegram',
       icon: 'faTelegram',
@@ -111,7 +121,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // GitHub
-  if (lowerUrl.includes('github.com')) {
+  if (hostname === 'github.com' || hostname.endsWith('.github.com')) {
     return {
       name: 'GitHub',
       icon: 'faGithub',
@@ -120,7 +130,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // Discord
-  if (lowerUrl.includes('discord.com') || lowerUrl.includes('discord.gg')) {
+  if (hostname === 'discord.com' || hostname === 'discord.gg' || hostname.endsWith('.discord.com')) {
     return {
       name: 'Discord',
       icon: 'faDiscord',
@@ -129,7 +139,7 @@ export const detectSocialNetwork = (url: string): SocialNetwork | null => {
   }
   
   // Twitch
-  if (lowerUrl.includes('twitch.tv')) {
+  if (hostname === 'twitch.tv' || hostname.endsWith('.twitch.tv')) {
     return {
       name: 'Twitch',
       icon: 'faTwitch',
