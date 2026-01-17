@@ -1,7 +1,8 @@
 'use client'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faEdit, faTrash, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
+import { faEdit, faTrash, faChevronDown, faChevronUp, faGlobe } from '@fortawesome/free-solid-svg-icons'
+import * as BrandIcons from '@fortawesome/free-brands-svg-icons'
 import { useState } from 'react'
 import type { Asset } from '@/types'
 
@@ -25,9 +26,12 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   // Check if this is a phone access asset
   const isPhoneAccess = asset.category === 'digital_assets' && asset.type === 'phone_access'
   
+  // Check if this is a social account asset
+  const isSocialAccount = asset.category === 'digital_assets' && asset.type === 'social_accounts'
+  
   // Get custom fields (all fields except the main ones and liability-specific ones)
   const customFields = Object.entries(asset.data).filter(
-    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_password', 'identification_methods'].includes(key)
+    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_password', 'identification_methods', 'profile_link', 'social_email', 'social_password', 'network_name', 'network_icon', 'network_color'].includes(key)
   )
   
   // Check if this is a liability
@@ -88,6 +92,52 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
                 <div className="mt-2 flex items-center space-x-2">
                   <p className="text-xs text-gray-500">
                     Password: {showPassword ? asset.data.phone_password : '••••••••'}
+                  </p>
+                  <button
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-xs text-indigo-600 hover:text-indigo-700 underline"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : isSocialAccount ? (
+            <>
+              <div className="flex items-center gap-3">
+                {asset.data.network_icon && (
+                  <FontAwesomeIcon 
+                    icon={(BrandIcons as any)[asset.data.network_icon] || faGlobe}
+                    className="text-2xl"
+                    style={{ color: asset.data.network_color || '#6b7280' }}
+                  />
+                )}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {asset.data.network_name || 'Social Account'}
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">Social Account</p>
+                </div>
+              </div>
+              {asset.data.social_email && (
+                <p className="text-xs text-gray-500 mt-2">Email: {asset.data.social_email}</p>
+              )}
+              {asset.data.profile_link && (
+                <p className="text-xs text-gray-500 mt-1 truncate">
+                  <a 
+                    href={asset.data.profile_link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 hover:text-indigo-700 underline"
+                  >
+                    View Profile
+                  </a>
+                </p>
+              )}
+              {asset.data.social_password && (
+                <div className="mt-2 flex items-center space-x-2">
+                  <p className="text-xs text-gray-500">
+                    Password: {showPassword ? asset.data.social_password : '••••••••'}
                   </p>
                   <button
                     onClick={() => setShowPassword(!showPassword)}
