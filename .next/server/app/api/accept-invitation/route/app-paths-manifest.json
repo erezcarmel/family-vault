@@ -1,0 +1,3 @@
+{
+  "/api/accept-invitation/route": "app/api/accept-invitation/route.js"
+}

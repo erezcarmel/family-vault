@@ -1,0 +1,10 @@
+var R=require("../../../chunks/[turbopack]_runtime.js")("server/app/api/add-family-user/route.js")
+R.c("server/chunks/[root-of-the-server]__32468f05._.js")
+R.c("server/chunks/node_modules_ae5569c2._.js")
+R.c("server/chunks/_20f14c9e._.js")
+R.c("server/chunks/[root-of-the-server]__c97961e4._.js")
+R.c("server/chunks/node_modules_42103433._.js")
+R.c("server/chunks/[root-of-the-server]__caaf520f._.js")
+R.c("server/chunks/_next-internal_server_app_api_add-family-user_route_actions_b600fd13.js")
+R.m(22473)
+module.exports=R.m(22473).exports
