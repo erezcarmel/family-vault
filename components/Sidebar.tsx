@@ -146,6 +146,7 @@ export default function Sidebar() {
     if (isAssetPage || !countsLoaded) {
       loadAssetCounts()
     }
+    // countsLoaded is intentionally checked but not in deps to avoid loop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
 
