@@ -15,9 +15,10 @@ export async function checkEmailRecoveryStatus(
 ): Promise<{ hasEmailAsset: boolean; hasRecoveryEmail: boolean }> {
   try {
     // Search for an email asset with this email address
+    // Only select needed fields to reduce data transfer
     const { data: emailAssets, error } = await supabase
       .from('assets')
-      .select('*')
+      .select('id, data')
       .eq('family_id', familyId)
       .eq('category', 'digital_assets')
       .eq('type', 'email_accounts')
@@ -72,8 +73,14 @@ export function isEmailField(fieldName: string): boolean {
   return emailFieldPatterns.includes(normalizedName)
 }
 
-// HTML5 email validation pattern - follows RFC 5322 standard
-// Compiled once as a constant to avoid recompilation on each validation
+/**
+ * HTML5 email validation pattern following RFC 5322 standard
+ * Pattern breakdown:
+ * - Local part: [a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+ (alphanumeric and special chars)
+ * - @ symbol
+ * - Domain part: alphanumeric with optional hyphens, separated by dots
+ * - Top-level domain: at least one dot followed by alphanumeric chars
+ */
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
 /**

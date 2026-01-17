@@ -158,6 +158,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   // for parallel checks, the performance impact is minimal. If needed, a debounce
   // could be added in the future for forms with many dynamic email fields.
   useEffect(() => {
+    // Check if this is an email asset (using string literals for consistency with existing codebase patterns)
     const isEmailAsset = category === 'digital_assets' && subCategory === 'email_accounts'
     if (isEmailAsset) return // Skip for email assets themselves
     if (!familyId) return // Wait for family ID to be loaded
