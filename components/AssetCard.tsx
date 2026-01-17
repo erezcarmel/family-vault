@@ -53,18 +53,33 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
     if (isEmailAccount) return // Skip for email assets themselves
 
     const checkEmailFields = async () => {
-      const statusMap: Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }> = {}
+      // Find all email fields first
+      const emailFieldsToCheck = customFields.filter(
+        ([key, value]) => isEmailField(key) && isValidEmail(String(value))
+      )
       
-      for (const [key, value] of customFields) {
-        if (isEmailField(key) && isValidEmail(String(value))) {
-          const status = await checkEmailRecoveryStatus(
-            supabase,
-            asset.family_id,
-            String(value)
-          )
-          statusMap[key] = status
-        }
+      if (emailFieldsToCheck.length === 0) {
+        setEmailRecoveryStatus({})
+        return
       }
+
+      // Check all email fields in parallel for better performance
+      const statusChecks = emailFieldsToCheck.map(async ([key, value]) => {
+        const status = await checkEmailRecoveryStatus(
+          supabase,
+          asset.family_id,
+          String(value)
+        )
+        return { fieldName: key, status }
+      })
+
+      const results = await Promise.all(statusChecks)
+      
+      // Convert results to status map
+      const statusMap: Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }> = {}
+      results.forEach(({ fieldName, status }) => {
+        statusMap[fieldName] = status
+      })
       
       setEmailRecoveryStatus(statusMap)
     }

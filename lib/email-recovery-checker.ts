@@ -53,7 +53,19 @@ export async function checkEmailRecoveryStatus(
  */
 export function isEmailField(fieldName: string): boolean {
   const normalizedName = fieldName.toLowerCase().trim()
-  return normalizedName === 'email' || normalizedName.includes('email')
+  // Check for exact matches or common email field patterns
+  const emailFieldPatterns = [
+    'email',
+    'email_address',
+    'emailaddress',
+    'contact_email',
+    'contactemail',
+    'user_email',
+    'useremail',
+    'account_email',
+    'accountemail'
+  ]
+  return emailFieldPatterns.includes(normalizedName)
 }
 
 /**
@@ -62,6 +74,7 @@ export function isEmailField(fieldName: string): boolean {
  * @returns true if the value is a valid email format
  */
 export function isValidEmail(value: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  // HTML5 email validation pattern - follows RFC 5322 standard
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
   return emailRegex.test(value)
 }

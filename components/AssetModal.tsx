@@ -155,21 +155,37 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   // Check email recovery status for custom fields
   useEffect(() => {
     const isEmailAsset = category === 'digital_assets' && subCategory === 'email_accounts'
-    if (isEmailAsset || !familyId) return // Skip for email assets themselves
+    if (isEmailAsset) return // Skip for email assets themselves
+    if (!familyId) return // Wait for family ID to be loaded
 
     const checkEmailFields = async () => {
-      const statusMap: Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }> = {}
+      // Find all email fields first
+      const emailFieldsToCheck = customFields.filter(
+        field => isEmailField(field.name) && isValidEmail(field.value)
+      )
       
-      for (const field of customFields) {
-        if (isEmailField(field.name) && isValidEmail(field.value)) {
-          const status = await checkEmailRecoveryStatus(
-            supabase,
-            familyId,
-            field.value
-          )
-          statusMap[field.name] = status
-        }
+      if (emailFieldsToCheck.length === 0) {
+        setEmailRecoveryStatus({})
+        return
       }
+
+      // Check all email fields in parallel for better performance
+      const statusChecks = emailFieldsToCheck.map(async (field) => {
+        const status = await checkEmailRecoveryStatus(
+          supabase,
+          familyId,
+          field.value
+        )
+        return { fieldName: field.name, status }
+      })
+
+      const results = await Promise.all(statusChecks)
+      
+      // Convert results to status map
+      const statusMap: Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }> = {}
+      results.forEach(({ fieldName, status }) => {
+        statusMap[fieldName] = status
+      })
       
       setEmailRecoveryStatus(statusMap)
     }
