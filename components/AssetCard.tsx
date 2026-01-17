@@ -1,8 +1,10 @@
 'use client'
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faEdit, faTrash, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
-import { useState } from 'react'
+import { faEdit, faTrash, faChevronDown, faChevronUp, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { checkEmailRecoveryStatus, isEmailField, isValidEmail } from '@/lib/email-recovery-checker'
 import type { Asset } from '@/types'
 
 interface AssetCardProps {
@@ -15,6 +17,8 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showPinMap, setShowPinMap] = useState<Record<number, boolean>>({})
+  const [emailRecoveryStatus, setEmailRecoveryStatus] = useState<Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }>>({})
+  const supabase = createClient()
 
   // Check if this is a digital asset email account
   const isEmailAccount = asset.category === 'digital_assets' && asset.type === 'email_accounts'
@@ -43,6 +47,30 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   
   // Number of liability fields to show in main card (rest go to expandable section)
   const PRIMARY_LIABILITY_FIELDS_COUNT = 2
+
+  // Check email recovery status for custom email fields (only for non-email assets)
+  useEffect(() => {
+    if (isEmailAccount) return // Skip for email assets themselves
+
+    const checkEmailFields = async () => {
+      const statusMap: Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }> = {}
+      
+      for (const [key, value] of customFields) {
+        if (isEmailField(key) && isValidEmail(String(value))) {
+          const status = await checkEmailRecoveryStatus(
+            supabase,
+            asset.family_id,
+            String(value)
+          )
+          statusMap[key] = status
+        }
+      }
+      
+      setEmailRecoveryStatus(statusMap)
+    }
+
+    checkEmailFields()
+  }, [asset, customFields, isEmailAccount])
 
   return (
     <div className="card hover:shadow-lg transition-shadow">
@@ -187,12 +215,37 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
                   </div>
                 </div>
               )}
-              {customFields.map(([key, value]) => (
-                <div key={key} className="flex justify-between text-sm">
-                  <span className="text-gray-600">{key}:</span>
-                  <span className="text-gray-900 font-medium">{String(value)}</span>
-                </div>
-              ))}
+              {customFields.map(([key, value]) => {
+                const isEmail = isEmailField(key) && isValidEmail(String(value))
+                const emailStatus = emailRecoveryStatus[key]
+                const shouldShowWarning = isEmail && emailStatus && (!emailStatus.hasEmailAsset || !emailStatus.hasRecoveryEmail)
+                
+                return (
+                  <div key={key} className="flex justify-between text-sm items-center">
+                    <span className="text-gray-600">{key}:</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-medium ${shouldShowWarning ? 'text-red-600' : 'text-gray-900'}`}>
+                        {String(value)}
+                      </span>
+                      {shouldShowWarning && (
+                        <div className="group relative">
+                          <FontAwesomeIcon 
+                            icon={faExclamationTriangle} 
+                            className="text-red-600 cursor-help"
+                          />
+                          <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block z-10 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+                            {!emailStatus.hasEmailAsset ? (
+                              'This email has no corresponding email asset. Without a recovery email, password recovery may not be possible.'
+                            ) : (
+                              'This email asset exists but has no recovery email defined. Without a recovery email and password, account access may be lost.'
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
