@@ -10,6 +10,44 @@ export interface SocialNetwork {
 }
 
 /**
+ * Extracts the hostname from a URL string safely
+ * @param url - The URL to parse
+ * @returns The hostname or null if invalid
+ */
+function getHostname(url: string): string | null {
+  try {
+    const urlObj = new URL(url)
+    return urlObj.hostname.toLowerCase()
+  } catch {
+    // If URL parsing fails, try adding protocol and parsing again
+    try {
+      const urlObj = new URL(`https://${url}`)
+      return urlObj.hostname.toLowerCase()
+    } catch {
+      return null
+    }
+  }
+}
+
+/**
+ * Checks if hostname matches the expected domain
+ * @param hostname - The hostname to check
+ * @param domains - Array of valid domain names
+ * @returns true if hostname matches any of the domains
+ */
+function matchesDomain(hostname: string | null, domains: string[]): boolean {
+  if (!hostname) return false
+  
+  // Check if hostname is exactly the domain or a subdomain of it
+  for (const domain of domains) {
+    if (hostname === domain || hostname.endsWith(`.${domain}`)) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
  * Detects the social network from a profile URL
  * @param url - The profile URL to analyze
  * @returns SocialNetwork object if detected, null otherwise
@@ -17,10 +55,11 @@ export interface SocialNetwork {
 export function detectSocialNetwork(url: string): SocialNetwork | null {
   if (!url || typeof url !== 'string') return null
   
-  const normalizedUrl = url.toLowerCase().trim()
+  const hostname = getHostname(url.trim())
+  if (!hostname) return null
   
   // Facebook patterns
-  if (normalizedUrl.includes('facebook.com') || normalizedUrl.includes('fb.com') || normalizedUrl.includes('fb.me')) {
+  if (matchesDomain(hostname, ['facebook.com', 'fb.com', 'fb.me'])) {
     return {
       name: 'Facebook',
       logo: '📘',
@@ -29,7 +68,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // Twitter/X patterns
-  if (normalizedUrl.includes('twitter.com') || normalizedUrl.includes('x.com')) {
+  if (matchesDomain(hostname, ['twitter.com', 'x.com'])) {
     return {
       name: 'X (Twitter)',
       logo: '𝕏',
@@ -38,7 +77,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // Instagram patterns
-  if (normalizedUrl.includes('instagram.com')) {
+  if (matchesDomain(hostname, ['instagram.com'])) {
     return {
       name: 'Instagram',
       logo: '📷',
@@ -47,7 +86,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // LinkedIn patterns
-  if (normalizedUrl.includes('linkedin.com')) {
+  if (matchesDomain(hostname, ['linkedin.com'])) {
     return {
       name: 'LinkedIn',
       logo: '💼',
@@ -56,7 +95,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // TikTok patterns
-  if (normalizedUrl.includes('tiktok.com')) {
+  if (matchesDomain(hostname, ['tiktok.com'])) {
     return {
       name: 'TikTok',
       logo: '🎵',
@@ -65,7 +104,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // YouTube patterns
-  if (normalizedUrl.includes('youtube.com') || normalizedUrl.includes('youtu.be')) {
+  if (matchesDomain(hostname, ['youtube.com', 'youtu.be'])) {
     return {
       name: 'YouTube',
       logo: '▶️',
@@ -74,7 +113,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // Reddit patterns
-  if (normalizedUrl.includes('reddit.com')) {
+  if (matchesDomain(hostname, ['reddit.com'])) {
     return {
       name: 'Reddit',
       logo: '🤖',
@@ -83,7 +122,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // Pinterest patterns
-  if (normalizedUrl.includes('pinterest.com')) {
+  if (matchesDomain(hostname, ['pinterest.com'])) {
     return {
       name: 'Pinterest',
       logo: '📌',
@@ -92,7 +131,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // Snapchat patterns
-  if (normalizedUrl.includes('snapchat.com')) {
+  if (matchesDomain(hostname, ['snapchat.com'])) {
     return {
       name: 'Snapchat',
       logo: '👻',
@@ -101,7 +140,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // WhatsApp patterns
-  if (normalizedUrl.includes('whatsapp.com') || normalizedUrl.includes('wa.me')) {
+  if (matchesDomain(hostname, ['whatsapp.com', 'wa.me'])) {
     return {
       name: 'WhatsApp',
       logo: '💬',
@@ -110,7 +149,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // Telegram patterns
-  if (normalizedUrl.includes('telegram.org') || normalizedUrl.includes('t.me')) {
+  if (matchesDomain(hostname, ['telegram.org', 't.me'])) {
     return {
       name: 'Telegram',
       logo: '✈️',
@@ -119,7 +158,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // Discord patterns
-  if (normalizedUrl.includes('discord.com') || normalizedUrl.includes('discord.gg')) {
+  if (matchesDomain(hostname, ['discord.com', 'discord.gg'])) {
     return {
       name: 'Discord',
       logo: '🎮',
@@ -128,7 +167,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // Twitch patterns
-  if (normalizedUrl.includes('twitch.tv')) {
+  if (matchesDomain(hostname, ['twitch.tv'])) {
     return {
       name: 'Twitch',
       logo: '🎮',
@@ -137,7 +176,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   // GitHub patterns
-  if (normalizedUrl.includes('github.com')) {
+  if (matchesDomain(hostname, ['github.com'])) {
     return {
       name: 'GitHub',
       logo: '🐙',
