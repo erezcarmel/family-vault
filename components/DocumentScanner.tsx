@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCamera, faSpinner, faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faCamera, faSpinner, faTimes, faFile } from '@fortawesome/free-solid-svg-icons'
 
 interface DocumentScannerProps {
   category: string
@@ -85,19 +85,23 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
 
       <div className="space-y-3">
         {uploadedImage && (
-          <div className="relative">
-            <img
-              src={uploadedImage}
-              alt="Uploaded document"
-              className="w-full max-h-48 object-contain rounded-lg border border-indigo-200"
-            />
-            <button
-              type="button"
-              onClick={() => setUploadedImage(null)}
-              className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700"
-            >
-              <FontAwesomeIcon icon={faTimes} className="text-xs" />
-            </button>
+          <div className="border-2 border-indigo-200 bg-indigo-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FontAwesomeIcon icon={faFile} className="text-indigo-600 text-2xl" />
+                <div>
+                  <p className="font-medium text-gray-900">Document uploaded</p>
+                  <p className="text-sm text-gray-600">Ready to scan</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadedImage(null)}
+                className="text-red-600 hover:text-red-700"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
           </div>
         )}
 
