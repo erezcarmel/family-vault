@@ -15,6 +15,7 @@ const subCategories: { id: AssetType; title: string }[] = [
   { id: 'computer_access', title: 'Computer Access' },
   { id: 'phone_access', title: 'Phone Access' },
   { id: 'cloud_storage', title: 'Cloud Storage' },
+  { id: 'social_accounts', title: 'Social Accounts' },
 ]
 
 export default function DigitalAssets() {
