@@ -68,6 +68,12 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [familyMembers, setFamilyMembers] = useState<Array<{ id: string; name: string }>>([])
   const [loadingFamilyMembers, setLoadingFamilyMembers] = useState(false)
   
+  // Cloud storage-specific fields
+  const [cloudProvider, setCloudProvider] = useState('')
+  const [cloudUsername, setCloudUsername] = useState('')
+  const [cloudPassword, setCloudPassword] = useState('')
+  const [showCloudPassword, setShowCloudPassword] = useState(false)
+
   // Email recovery status for custom fields
   const [emailRecoveryStatus, setEmailRecoveryStatus] = useState<Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }>>({})
   const [familyId, setFamilyId] = useState<string | null>(null)
@@ -107,13 +113,19 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (asset.data.phone_owner) setPhoneOwner(asset.data.phone_owner)
       if (asset.data.phone_pin) setPhonePin(asset.data.phone_pin)
       
+      // Set cloud storage-specific fields if they exist
+      if (asset.data.cloud_provider) setCloudProvider(asset.data.cloud_provider)
+      if (asset.data.cloud_username) setCloudUsername(asset.data.cloud_username)
+      if (asset.data.cloud_password) setCloudPassword(asset.data.cloud_password)
+      
       // Extract custom fields (excluding standard fields)
       const standardFields = ['provider_name', 'account_type', 'account_number', 
                               'loan_amount', 'interest_rate', 'loan_term', 
                               'monthly_payment', 'term_length',
                               'email', 'password', 'recovery_email', 'notes',
                               'device_name', 'computer_user', 'computer_password',
-                              'phone_name', 'phone_owner', 'phone_pin']
+                              'phone_name', 'phone_owner', 'phone_pin',
+                              'cloud_provider', 'cloud_username', 'cloud_password']
       const customData = Object.entries(asset.data)
         .filter(([key]) => !standardFields.includes(key))
         .map(([name, value]) => ({ name, value: String(value) }))
@@ -304,6 +316,10 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setCustomPhoneOwner('')
     setPhonePin('')
     setShowPhonePin(false)
+    setCloudProvider('')
+    setCloudUsername('')
+    setCloudPassword('')
+    setShowCloudPassword(false)
   }
 
   const addCustomField = () => {
@@ -391,6 +407,20 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         alert('Please enter a PIN code')
         return
       }
+    } else if (category === 'digital_assets' && subCategory === 'cloud_storage') {
+      // Validation for cloud storage-specific fields
+      if (!cloudProvider) {
+        alert('Please select a cloud storage provider')
+        return
+      }
+      if (!cloudUsername) {
+        alert('Please enter a username or email')
+        return
+      }
+      if (!cloudPassword) {
+        alert('Please enter a password')
+        return
+      }
     } else {
       if (!finalProviderName) {
         alert('Please enter a provider name')
@@ -421,6 +451,11 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       data.phone_name = phoneName
       data.phone_owner = phoneOwner === '__custom__' ? customPhoneOwner : phoneOwner
       data.phone_pin = phonePin
+    } else if (category === 'digital_assets' && subCategory === 'cloud_storage') {
+      // For cloud storage, only include cloud storage-specific fields
+      data.cloud_provider = cloudProvider
+      data.cloud_username = cloudUsername
+      data.cloud_password = cloudPassword
     } else {
       // For other categories, include standard fields
       data.provider_name = finalProviderName
@@ -471,7 +506,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Document Scanner Section */}
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'cloud_storage')) && (
             <>
               <DocumentScanner
                 category={category}
@@ -501,7 +536,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </select>
           </div>
 
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'cloud_storage')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Provider Name *
@@ -557,8 +592,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </div>
           )}
 
-          {/* Hide Account/Policy Type field for liabilities, email accounts, computer access, and phone access */}
-          {category !== 'liabilities' && !(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {/* Hide Account/Policy Type field for liabilities, email accounts, computer access, phone access, and cloud storage */}
+          {category !== 'liabilities' && !(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'cloud_storage')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account/Policy Type
@@ -611,7 +646,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </div>
           )}
 
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'cloud_storage')) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account Number {category !== 'digital_assets' && '*'}
@@ -957,8 +992,86 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </>
           )}
 
+          {/* Cloud storage-specific fields */}
+          {category === 'digital_assets' && subCategory === 'cloud_storage' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cloud Storage Provider *
+                </label>
+                {subCategory && providers.length > 0 ? (
+                  <select
+                    value={cloudProvider}
+                    onChange={(e) => setCloudProvider(e.target.value)}
+                    className="input-field"
+                    required
+                  >
+                    <option value="">Select a cloud storage provider</option>
+                    {providers.map((provider) => (
+                      <option key={provider.id} value={provider.name}>
+                        {provider.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="input-field text-gray-500">Loading providers...</div>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Choose from the most common cloud storage providers
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Username / Email *
+                </label>
+                <input
+                  type="text"
+                  value={cloudUsername}
+                  onChange={(e) => setCloudUsername(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., user@example.com or username"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The username or email address used to access this cloud storage account
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showCloudPassword ? "text" : "password"}
+                    value={cloudPassword}
+                    onChange={(e) => setCloudPassword(e.target.value)}
+                    className="input-field pr-10"
+                    placeholder="Enter password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCloudPassword(!showCloudPassword)}
+                    className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-gray-900"
+                  >
+                    {showCloudPassword ? (
+                      <span className="text-sm">Hide</span>
+                    ) : (
+                      <span className="text-sm">Show</span>
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Password will be obfuscated when viewing the asset
+                </p>
+              </div>
+            </>
+          )}
+
           {/* Custom Fields */}
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access')) && (
+          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'cloud_storage')) && (
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
               
