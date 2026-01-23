@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes, faPlus, faTrash, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 import { checkEmailRecoveryStatus, isEmailField, isValidEmail } from '@/lib/email-recovery-checker'
+import { detectSocialNetwork } from '@/lib/social-network-detector'
 import DocumentScanner from './DocumentScanner'
 import type { Asset, AssetType, Provider, AccountType } from '@/types'
 
@@ -13,7 +14,14 @@ interface CustomField {
   value: string
 }
 
-
+// Digital asset types that have custom dedicated forms (no custom fields section)
+const DIGITAL_ASSET_TYPES_WITH_DEDICATED_FORMS: AssetType[] = [
+  'email_accounts',
+  'computer_access',
+  'phone_access',
+  'cloud_storage',
+  'social_accounts'
+]
 
 interface AssetModalProps {
   isOpen: boolean
@@ -74,9 +82,19 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [cloudPassword, setCloudPassword] = useState('')
   const [showCloudPassword, setShowCloudPassword] = useState(false)
 
+  // Social accounts-specific fields
+  const [socialProfileLink, setSocialProfileLink] = useState('')
+  const [socialEmail, setSocialEmail] = useState('')
+  const [socialPassword, setSocialPassword] = useState('')
+  const [showSocialPassword, setShowSocialPassword] = useState(false)
+  const [detectedSocialNetwork, setDetectedSocialNetwork] = useState<{ name: string; logo: string; color: string } | null>(null)
+
   // Email recovery status for custom fields
   const [emailRecoveryStatus, setEmailRecoveryStatus] = useState<Record<string, { hasEmailAsset: boolean; hasRecoveryEmail: boolean }>>({})
   const [familyId, setFamilyId] = useState<string | null>(null)
+  
+  // Email recovery status for social accounts
+  const [socialEmailRecoveryStatus, setSocialEmailRecoveryStatus] = useState<{ hasEmailAsset: boolean; hasRecoveryEmail: boolean } | null>(null)
   
   const supabase = createClient()
 
@@ -118,6 +136,15 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (asset.data.cloud_username) setCloudUsername(asset.data.cloud_username)
       if (asset.data.cloud_password) setCloudPassword(asset.data.cloud_password)
       
+      // Set social accounts-specific fields if they exist
+      if (asset.data.social_profile_link) {
+        setSocialProfileLink(asset.data.social_profile_link)
+        const network = detectSocialNetwork(asset.data.social_profile_link)
+        setDetectedSocialNetwork(network)
+      }
+      if (asset.data.social_email) setSocialEmail(asset.data.social_email)
+      if (asset.data.social_password) setSocialPassword(asset.data.social_password)
+      
       // Extract custom fields (excluding standard fields)
       const standardFields = ['provider_name', 'account_type', 'account_number', 
                               'loan_amount', 'interest_rate', 'loan_term', 
@@ -125,7 +152,8 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                               'email', 'password', 'recovery_email', 'notes',
                               'device_name', 'computer_user', 'computer_password',
                               'phone_name', 'phone_owner', 'phone_pin',
-                              'cloud_provider', 'cloud_username', 'cloud_password']
+                              'cloud_provider', 'cloud_username', 'cloud_password',
+                              'social_profile_link', 'social_email', 'social_password']
       const customData = Object.entries(asset.data)
         .filter(([key]) => !standardFields.includes(key))
         .map(([name, value]) => ({ name, value: String(value) }))
@@ -200,6 +228,31 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
     checkEmailFields()
   }, [customFields, category, subCategory, familyId])
+
+  // Check email recovery status for social accounts
+  useEffect(() => {
+    const isSocialAccount = category === 'digital_assets' && subCategory === 'social_accounts'
+    if (!isSocialAccount) {
+      setSocialEmailRecoveryStatus(null)
+      return
+    }
+    if (!familyId) return // Wait for family ID to be loaded
+    if (!socialEmail || !isValidEmail(socialEmail)) {
+      setSocialEmailRecoveryStatus(null)
+      return
+    }
+
+    const checkSocialEmailStatus = async () => {
+      const status = await checkEmailRecoveryStatus(
+        supabase,
+        familyId,
+        socialEmail
+      )
+      setSocialEmailRecoveryStatus(status)
+    }
+
+    checkSocialEmailStatus()
+  }, [socialEmail, category, subCategory, familyId])
 
   // Load providers and account types when sub-category changes
   useEffect(() => {
@@ -320,6 +373,11 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setCloudUsername('')
     setCloudPassword('')
     setShowCloudPassword(false)
+    setSocialProfileLink('')
+    setSocialEmail('')
+    setSocialPassword('')
+    setShowSocialPassword(false)
+    setDetectedSocialNetwork(null)
   }
 
   const addCustomField = () => {
@@ -338,6 +396,12 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
   const removeCustomField = (name: string) => {
     setCustomFields(customFields.filter(field => field.name !== name))
+  }
+
+  const handleSocialProfileLinkChange = (value: string) => {
+    setSocialProfileLink(value)
+    const network = detectSocialNetwork(value)
+    setDetectedSocialNetwork(network)
   }
 
   const handleDocumentDataExtracted = (data: Record<string, unknown>) => {
@@ -421,6 +485,16 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         alert('Please enter a password')
         return
       }
+    } else if (category === 'digital_assets' && subCategory === 'social_accounts') {
+      // Validation for social accounts-specific fields
+      if (!socialEmail) {
+        alert('Please enter an email address')
+        return
+      }
+      if (!isValidEmail(socialEmail)) {
+        alert('Please enter a valid email address')
+        return
+      }
     } else {
       if (!finalProviderName) {
         alert('Please enter a provider name')
@@ -456,6 +530,11 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       data.cloud_provider = cloudProvider
       data.cloud_username = cloudUsername
       data.cloud_password = cloudPassword
+    } else if (category === 'digital_assets' && subCategory === 'social_accounts') {
+      // For social accounts, only include social accounts-specific fields
+      if (socialProfileLink) data.social_profile_link = socialProfileLink
+      data.social_email = socialEmail
+      if (socialPassword) data.social_password = socialPassword
     } else {
       // For other categories, include standard fields
       data.provider_name = finalProviderName
@@ -1070,8 +1149,114 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </>
           )}
 
+          {/* Social Accounts Form */}
+          {category === 'digital_assets' && subCategory === 'social_accounts' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Profile Link
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={socialProfileLink}
+                    onChange={(e) => handleSocialProfileLinkChange(e.target.value)}
+                    className="input-field"
+                    placeholder="e.g., https://facebook.com/yourprofile"
+                  />
+                  {detectedSocialNetwork && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span 
+                        className="text-2xl"
+                        title={detectedSocialNetwork.name}
+                      >
+                        {detectedSocialNetwork.logo}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {detectedSocialNetwork ? (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Detected: {detectedSocialNetwork.name}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter a social profile URL to auto-detect the network
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={socialEmail}
+                  onChange={(e) => setSocialEmail(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., user@example.com"
+                  required
+                />
+                {socialEmailRecoveryStatus && (!socialEmailRecoveryStatus.hasEmailAsset || !socialEmailRecoveryStatus.hasRecoveryEmail) && (
+                  <div className="mt-2 flex items-start space-x-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                    <FontAwesomeIcon 
+                      icon={faExclamationTriangle} 
+                      className="text-red-600 mt-0.5 flex-shrink-0" 
+                    />
+                    <div className="text-xs text-red-700">
+                      {!socialEmailRecoveryStatus.hasEmailAsset ? (
+                        <p>
+                          <strong>Warning:</strong> No email asset found for this email address. 
+                          Consider adding it to Email Accounts first.
+                        </p>
+                      ) : (
+                        <p>
+                          <strong>Warning:</strong> The email asset for this address does not have a recovery email set. 
+                          Consider adding a recovery email to the email asset.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  The email address associated with this social account
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showSocialPassword ? "text" : "password"}
+                    value={socialPassword}
+                    onChange={(e) => setSocialPassword(e.target.value)}
+                    className="input-field pr-10"
+                    placeholder="Enter password (optional)"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSocialPassword(!showSocialPassword)}
+                    className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-gray-900"
+                  >
+                    {showSocialPassword ? (
+                      <span className="text-sm">Hide</span>
+                    ) : (
+                      <span className="text-sm">Show</span>
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Password will be obfuscated when viewing the asset
+                </p>
+              </div>
+            </>
+          )}
+
           {/* Custom Fields */}
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'cloud_storage')) && (
+          {!(category === 'digital_assets' && DIGITAL_ASSET_TYPES_WITH_DEDICATED_FORMS.includes(subCategory as AssetType)) && (
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
               
