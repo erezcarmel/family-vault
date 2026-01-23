@@ -107,6 +107,10 @@ export default function StepsGuide() {
 
   const allCompleted = Object.values(steps).every(step => step.completed)
 
+  if (allCompleted) {
+    return null
+  }
+
   return (
     <div className={`fixed bottom-6 right-6 z-40 transition-all duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-80 max-w-[calc(100vw-3rem)]">
@@ -136,15 +140,13 @@ export default function StepsGuide() {
               />
             </div>
           </button>
-          {allCompleted && (
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-gray-600 transition-colors ml-2"
-              aria-label="Close guide"
-            >
-              <FontAwesomeIcon icon={faTimes} className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={() => setIsOpen(false)}
+            className="text-gray-400 hover:text-gray-600 transition-colors ml-2"
+            aria-label="Close guide"
+          >
+            <FontAwesomeIcon icon={faTimes} className="w-4 h-4" />
+          </button>
         </div>
         
         <div
