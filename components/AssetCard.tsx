@@ -36,9 +36,11 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const isSocialAccount = asset.category === 'digital_assets' && asset.type === 'social_accounts'
   
   // Get custom fields (all fields except the main ones and liability-specific ones)
-  const customFields = Object.entries(asset.data).filter(
-    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_pin', 'cloud_provider', 'cloud_username', 'cloud_password', 'social_profile_link', 'social_email', 'social_password'].includes(key)
-  )
+  const customFields = useMemo(() => {
+    return Object.entries(asset.data).filter(
+      ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_pin', 'cloud_provider', 'cloud_username', 'cloud_password', 'social_profile_link', 'social_email', 'social_password'].includes(key)
+    )
+  }, [asset.data])
   
   // Check if this is a liability
   const isLiability = asset.category === 'liabilities'
@@ -98,7 +100,7 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
     }
 
     checkEmailFields()
-  }, [asset, customFields, isEmailAccount, isSocialAccount])
+  }, [asset, customFields, isEmailAccount, supabase, isSocialAccount])
 
   return (
     <div className="card hover:shadow-lg transition-shadow">
