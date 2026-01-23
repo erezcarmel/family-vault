@@ -5,6 +5,7 @@ import { faEdit, faTrash, faChevronDown, faChevronUp, faExclamationTriangle } fr
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { checkEmailRecoveryStatus, isEmailField, isValidEmail } from '@/lib/email-recovery-checker'
+import { detectSocialNetwork } from '@/lib/social-network-detector'
 import type { Asset } from '@/types'
 
 interface AssetCardProps {
@@ -31,9 +32,12 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   // Check if this is a cloud storage asset
   const isCloudStorage = asset.category === 'digital_assets' && asset.type === 'cloud_storage'
   
+  // Check if this is a social accounts asset
+  const isSocialAccount = asset.category === 'digital_assets' && asset.type === 'social_accounts'
+  
   // Get custom fields (all fields except the main ones and liability-specific ones)
   const customFields = Object.entries(asset.data).filter(
-    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_pin', 'cloud_provider', 'cloud_username', 'cloud_password'].includes(key)
+    ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_pin', 'cloud_provider', 'cloud_username', 'cloud_password', 'social_profile_link', 'social_email', 'social_password'].includes(key)
   )
   
   // Check if this is a liability
@@ -62,6 +66,11 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
         ([key, value]) => isEmailField(key) && isValidEmail(String(value))
       )
       
+      // For social accounts, also check the social_email field
+      if (isSocialAccount && asset.data.social_email && isValidEmail(asset.data.social_email)) {
+        emailFieldsToCheck.push(['social_email', asset.data.social_email])
+      }
+      
       if (emailFieldsToCheck.length === 0) {
         setEmailRecoveryStatus({})
         return
@@ -89,7 +98,7 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
     }
 
     checkEmailFields()
-  }, [asset, customFields, isEmailAccount])
+  }, [asset, customFields, isEmailAccount, isSocialAccount])
 
   return (
     <div className="card hover:shadow-lg transition-shadow">
@@ -166,6 +175,46 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
                 </div>
               )}
             </>
+          ) : isSocialAccount ? (
+            <>
+              {asset.data.social_profile_link && (() => {
+                const network = detectSocialNetwork(asset.data.social_profile_link)
+                return (
+                  <div className="flex items-center space-x-2">
+                    {network && (
+                      <span className="text-2xl" title={network.name}>
+                        {network.logo}
+                      </span>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {network ? network.name : 'Social Account'}
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">{asset.data.social_email}</p>
+                    </div>
+                  </div>
+                )
+              })()}
+              {!asset.data.social_profile_link && (
+                <>
+                  <h3 className="text-lg font-semibold text-gray-900">Social Account</h3>
+                  <p className="text-sm text-gray-600 mt-1">{asset.data.social_email}</p>
+                </>
+              )}
+              {asset.data.social_password && (
+                <div className="mt-2 flex items-center space-x-2">
+                  <p className="text-xs text-gray-500">
+                    Password: {showPassword ? asset.data.social_password : '••••••••'}
+                  </p>
+                  <button
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-xs text-indigo-600 hover:text-indigo-700 underline"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <>
               <h3 className="text-lg font-semibold text-gray-900">{asset.data.provider_name}</h3>
@@ -199,7 +248,7 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
         </div>
       </div>
 
-      {(customFields.length > 0 || liabilityFields.length > PRIMARY_LIABILITY_FIELDS_COUNT || (isEmailAccount && asset.data.notes)) && (
+      {(customFields.length > 0 || liabilityFields.length > PRIMARY_LIABILITY_FIELDS_COUNT || (isEmailAccount && asset.data.notes) || (isSocialAccount && asset.data.social_profile_link)) && (
         <div className="mt-4">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -211,6 +260,45 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
 
           {isExpanded && (
             <div className="mt-3 space-y-2 bg-gray-50 rounded-lg p-4">
+              {isSocialAccount && asset.data.social_profile_link && (
+                <div className="text-sm">
+                  <span className="text-gray-600">Profile Link:</span>
+                  <a 
+                    href={asset.data.social_profile_link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 hover:text-indigo-700 underline block mt-1 break-all"
+                  >
+                    {asset.data.social_profile_link}
+                  </a>
+                </div>
+              )}
+              {isSocialAccount && asset.data.social_email && (() => {
+                const emailStatus = emailRecoveryStatus['social_email']
+                const shouldShowWarning = emailStatus && (!emailStatus.hasEmailAsset || !emailStatus.hasRecoveryEmail)
+                
+                return shouldShowWarning ? (
+                  <div className="flex items-start space-x-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                    <FontAwesomeIcon 
+                      icon={faExclamationTriangle} 
+                      className="text-red-600 mt-0.5 flex-shrink-0" 
+                    />
+                    <div className="text-xs text-red-700">
+                      {!emailStatus.hasEmailAsset ? (
+                        <p>
+                          <strong>Warning:</strong> No email asset found for this email address. 
+                          Consider adding it to Email Accounts first.
+                        </p>
+                      ) : (
+                        <p>
+                          <strong>Warning:</strong> The email asset for this address does not have a recovery email set. 
+                          Consider adding a recovery email to the email asset.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : null
+              })()}
               {isLiability && liabilityFields.slice(PRIMARY_LIABILITY_FIELDS_COUNT).map(([key, value]) => (
                 <div key={key} className="flex justify-between text-sm">
                   <span className="text-gray-600">{key}:</span>
