@@ -14,7 +14,14 @@ interface CustomField {
   value: string
 }
 
-
+// Digital asset types that have custom dedicated forms (no custom fields section)
+const DIGITAL_ASSET_TYPES_WITH_DEDICATED_FORMS: AssetType[] = [
+  'email_accounts',
+  'computer_access',
+  'phone_access',
+  'cloud_storage',
+  'social_accounts'
+]
 
 interface AssetModalProps {
   isOpen: boolean
@@ -1249,7 +1256,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
           )}
 
           {/* Custom Fields */}
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'cloud_storage' || subCategory === 'social_accounts')) && (
+          {!(category === 'digital_assets' && DIGITAL_ASSET_TYPES_WITH_DEDICATED_FORMS.includes(subCategory as AssetType)) && (
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
               

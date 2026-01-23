@@ -122,7 +122,7 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   if (normalizedUrl.includes('discord.com') || normalizedUrl.includes('discord.gg')) {
     return {
       name: 'Discord',
-      logo: '💬',
+      logo: '🎮',
       color: '#5865F2'
     }
   }
@@ -146,22 +146,4 @@ export function detectSocialNetwork(url: string): SocialNetwork | null {
   }
   
   return null
-}
-
-/**
- * Validates if a string appears to be a URL
- * @param url - The string to validate
- * @returns true if it looks like a URL
- */
-export function isValidUrl(url: string): boolean {
-  if (!url || typeof url !== 'string') return false
-  
-  try {
-    new URL(url)
-    return true
-  } catch {
-    // If URL constructor fails, check for common URL patterns
-    const urlPattern = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/
-    return urlPattern.test(url.trim())
-  }
 }
