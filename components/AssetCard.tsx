@@ -34,7 +34,7 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   // Get custom fields (all fields except the main ones and liability-specific ones)
   const customFields = Object.entries(asset.data).filter(
     ([key]) => !['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'loan_term', 'monthly_payment', 'term_length', 'email', 'password', 'recovery_email', 'notes', 'device_name', 'computer_user', 'computer_password', 'phone_name', 'phone_owner', 'phone_pin', 'cloud_provider', 'cloud_username', 'cloud_password'].includes(key)
-  }, [asset.data])
+  )
   
   // Check if this is a liability
   const isLiability = asset.category === 'liabilities'
