@@ -38,7 +38,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [accountType, setAccountType] = useState('')
   const [customAccountType, setCustomAccountType] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
-  const [subCategory, setSubCategory] = useState<AssetType | ''>(subCategories.length > 0 ? subCategories[0].id : '')
+  const [subCategory, setSubCategory] = useState<AssetType | ''>('')
   const [customFields, setCustomFields] = useState<CustomField[]>([])
   const [newFieldName, setNewFieldName] = useState('')
   const [newFieldValue, setNewFieldValue] = useState('')
@@ -344,7 +344,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setAccountType('')
     setCustomAccountType('')
     setAccountNumber('')
-    setSubCategory(subCategories.length > 0 ? subCategories[0].id : '')
+    setSubCategory('')
     setCustomFields([])
     setNewFieldName('')
     setNewFieldValue('')
@@ -585,7 +585,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Document Scanner Section */}
-          {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'cloud_storage')) && (
+          {category !== 'digital_assets' && (
             <>
               <DocumentScanner
                 category={category}
