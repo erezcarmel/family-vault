@@ -584,18 +584,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Document Scanner Section */}
-          {category !== 'digital_assets' && (
-            <>
-              <DocumentScanner
-                category={category}
-                subCategory={subCategory}
-                onDataExtracted={handleDocumentDataExtracted}
-              />
-              <div className="border-t border-gray-200 pt-2"></div>
-            </>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Sub-Category *
@@ -614,6 +602,21 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
               ))}
             </select>
           </div>
+
+          {/* Only show fields after subcategory is selected */}
+          {subCategory && (
+            <>
+              {/* Document Scanner Section */}
+              {category !== 'digital_assets' && (
+                <>
+                  <DocumentScanner
+                    category={category}
+                    subCategory={subCategory}
+                    onDataExtracted={handleDocumentDataExtracted}
+                  />
+                  <div className="border-t border-gray-200 pt-2"></div>
+                </>
+              )}
 
           {!(category === 'digital_assets' && (subCategory === 'email_accounts' || subCategory === 'computer_access' || subCategory === 'phone_access' || subCategory === 'cloud_storage')) && (
             <div>
@@ -1255,82 +1258,84 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
             </>
           )}
 
-          {/* Custom Fields */}
-          {!(category === 'digital_assets' && DIGITAL_ASSET_TYPES_WITH_DEDICATED_FORMS.includes(subCategory as AssetType)) && (
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
-              
-              {customFields.length > 0 && (
-                <div className="space-y-2 mb-4">
-                  {customFields.map((field, index) => {
-                    const isEmail = isEmailField(field.name) && isValidEmail(field.value)
-                    const emailStatus = emailRecoveryStatus[field.name]
-                    const shouldShowWarning = isEmail && emailStatus && (!emailStatus.hasEmailAsset || !emailStatus.hasRecoveryEmail)
-                    
-                    return (
-                      <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                        <div className="flex-1 flex items-center gap-2">
-                          <div className="flex-1">
-                            <span className="text-sm font-medium text-gray-700">{field.name}:</span>
-                            <span className={`text-sm ml-2 ${shouldShowWarning ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
-                              {field.value}
-                            </span>
-                          </div>
-                          {shouldShowWarning && (
-                            <div className="group relative">
-                              <FontAwesomeIcon 
-                                icon={faExclamationTriangle} 
-                                className="text-red-600 cursor-help"
-                              />
-                              <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
-                                {!emailStatus.hasEmailAsset ? (
-                                  'This email has no corresponding email asset. Without a recovery email, password recovery may not be possible.'
-                                ) : (
-                                  'This email asset exists but has no recovery email defined. Without a recovery email and password, account access may be lost.'
-                                )}
+              {/* Custom Fields */}
+              {!(category === 'digital_assets' && DIGITAL_ASSET_TYPES_WITH_DEDICATED_FORMS.includes(subCategory as AssetType)) && (
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h3>
+                  
+                  {customFields.length > 0 && (
+                    <div className="space-y-2 mb-4">
+                      {customFields.map((field, index) => {
+                        const isEmail = isEmailField(field.name) && isValidEmail(field.value)
+                        const emailStatus = emailRecoveryStatus[field.name]
+                        const shouldShowWarning = isEmail && emailStatus && (!emailStatus.hasEmailAsset || !emailStatus.hasRecoveryEmail)
+                        
+                        return (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                            <div className="flex-1 flex items-center gap-2">
+                              <div className="flex-1">
+                                <span className="text-sm font-medium text-gray-700">{field.name}:</span>
+                                <span className={`text-sm ml-2 ${shouldShowWarning ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
+                                  {field.value}
+                                </span>
                               </div>
+                              {shouldShowWarning && (
+                                <div className="group relative">
+                                  <FontAwesomeIcon 
+                                    icon={faExclamationTriangle} 
+                                    className="text-red-600 cursor-help"
+                                  />
+                                  <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+                                    {!emailStatus.hasEmailAsset ? (
+                                      'This email has no corresponding email asset. Without a recovery email, password recovery may not be possible.'
+                                    ) : (
+                                      'This email asset exists but has no recovery email defined. Without a recovery email and password, account access may be lost.'
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeCustomField(field.name)}
-                          className="text-red-600 hover:text-red-700 ml-2"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      </div>
-                    )
-                  })}
+                            <button
+                              type="button"
+                              onClick={() => removeCustomField(field.name)}
+                              className="text-red-600 hover:text-red-700 ml-2"
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      value={newFieldName}
+                      onChange={(e) => setNewFieldName(e.target.value)}
+                      className="input-field"
+                      placeholder="Field name"
+                    />
+                    <input
+                      type="text"
+                      value={newFieldValue}
+                      onChange={(e) => setNewFieldValue(e.target.value)}
+                      className="input-field"
+                      placeholder="Field value"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addCustomField}
+                    disabled={!newFieldName || !newFieldValue}
+                    className="mt-2 btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                    Add Custom Field
+                  </button>
                 </div>
               )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={newFieldName}
-                  onChange={(e) => setNewFieldName(e.target.value)}
-                  className="input-field"
-                  placeholder="Field name"
-                />
-                <input
-                  type="text"
-                  value={newFieldValue}
-                  onChange={(e) => setNewFieldValue(e.target.value)}
-                  className="input-field"
-                  placeholder="Field value"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={addCustomField}
-                disabled={!newFieldName || !newFieldValue}
-                className="mt-2 btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FontAwesomeIcon icon={faPlus} className="mr-2" />
-                Add Custom Field
-              </button>
-            </div>
+            </>
           )}
 
           <div className="flex space-x-3 pt-6 border-t border-gray-200">
