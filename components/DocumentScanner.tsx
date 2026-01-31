@@ -47,7 +47,7 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
       if (!contentType || !contentType.includes('application/json')) {
         // If not JSON, try to get the text for error reporting
         const text = await response.text()
-        throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`)
+        throw new Error(`Server error - please try again. If the problem persists, ensure your file is a valid PDF or image, and contact support. Details: ${text.substring(0, 100)}`)
       }
 
       const result = await response.json()

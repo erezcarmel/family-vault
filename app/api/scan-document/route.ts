@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch (_parseError) {
       return NextResponse.json(
-        {error: "Invalid JSON in request body"},
+        {error: "Invalid JSON in request body. Please ensure you're sending a valid JSON payload with imageBase64 or fileBase64, category, and type fields."},
         {status: 400}
       );
     }
