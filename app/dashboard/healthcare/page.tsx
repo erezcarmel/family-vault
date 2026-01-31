@@ -8,6 +8,8 @@ import type { FamilyMember, HealthcareRecord, HealthcareProviderType } from '@/t
 
 export const dynamic = 'force-dynamic'
 
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024 // 50MB
+
 const providerTypes: { id: HealthcareProviderType; title: string }[] = [
   { id: 'primary_care', title: 'Primary Care' },
   { id: 'specialist', title: 'Specialist' },
@@ -15,6 +17,15 @@ const providerTypes: { id: HealthcareProviderType; title: string }[] = [
   { id: 'dental', title: 'Dental' },
   { id: 'vision', title: 'Vision' },
 ]
+
+// Utility function to format file sizes
+const formatFileSize = (bytes: number | null): string => {
+  if (!bytes) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+}
 
 export default function Healthcare() {
   const [members, setMembers] = useState<FamilyMember[]>([])
@@ -317,14 +328,6 @@ function HealthcareCard({ record, member, onEdit, onDelete }: HealthcareCardProp
     }
   }
 
-  const formatFileSize = (bytes: number | null): string => {
-    if (!bytes) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
-  }
-
   return (
     <div className="card hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between">
@@ -531,20 +534,12 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
     const file = e.target.files?.[0]
     if (file) {
       // Check file size (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
         alert('File size must be less than 50MB')
         return
       }
       setSelectedFile(file)
     }
-  }
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
