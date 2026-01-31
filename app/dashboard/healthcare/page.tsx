@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faHeartPulse, faTimes, faTrash, faEdit, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faHeartPulse, faTimes, faTrash, faEdit, faChevronDown, faChevronUp, faFile, faDownload, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import type { FamilyMember, HealthcareRecord, HealthcareProviderType } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -89,6 +89,22 @@ export default function Healthcare() {
     if (!confirm('Are you sure you want to delete this healthcare record?')) return
 
     try {
+      // Get the record to check if it has a file
+      const record = healthcareRecords.find(r => r.id === id)
+      
+      // Delete file from storage if exists
+      if (record?.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('family-documents')
+          .remove([record.file_path])
+        
+        if (storageError) {
+          console.error('Error deleting file:', storageError)
+          // Continue with record deletion even if file deletion fails
+        }
+      }
+
+      // Delete the record
       const { error } = await supabase
         .from('healthcare_records')
         .delete()
@@ -267,9 +283,47 @@ interface HealthcareCardProps {
 
 function HealthcareCard({ record, member, onEdit, onDelete }: HealthcareCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [downloadingFile, setDownloadingFile] = useState(false)
+  const supabase = createClient()
 
   const hasDetails = record.doctor_name || record.specialty || record.phone || record.email || 
                      record.address || record.policy_number || record.group_number || record.notes
+
+  const handleDownloadFile = async () => {
+    if (!record.file_path || !record.file_name) return
+    
+    setDownloadingFile(true)
+    try {
+      const { data, error } = await supabase.storage
+        .from('family-documents')
+        .download(record.file_path)
+
+      if (error) throw error
+
+      // Create a download link
+      const url = window.URL.createObjectURL(data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = record.file_name
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Error downloading file:', error)
+      alert('Failed to download file. Please try again.')
+    } finally {
+      setDownloadingFile(false)
+    }
+  }
+
+  const formatFileSize = (bytes: number | null): string => {
+    if (!bytes) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+  }
 
   return (
     <div className="card hover:shadow-lg transition-shadow">
@@ -371,6 +425,31 @@ function HealthcareCard({ record, member, onEdit, onDelete }: HealthcareCardProp
           )}
         </div>
       )}
+
+      {/* File attachment section */}
+      {record.file_name && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between bg-indigo-50 rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <FontAwesomeIcon icon={faFile} className="text-indigo-600 text-lg" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">{record.file_name}</p>
+                {record.file_size && (
+                  <p className="text-xs text-gray-600">{formatFileSize(record.file_size)}</p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={handleDownloadFile}
+              disabled={downloadingFile}
+              className="text-indigo-600 hover:text-indigo-700 p-2 rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
+              title="Download file"
+            >
+              <FontAwesomeIcon icon={downloadingFile ? faSpinner : faDownload} className={downloadingFile ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -399,6 +478,9 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
   const [policyNumber, setPolicyNumber] = useState('')
   const [groupNumber, setGroupNumber] = useState('')
   const [notes, setNotes] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -439,6 +521,30 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
     setPolicyNumber('')
     setGroupNumber('')
     setNotes('')
+    setSelectedFile(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Check file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('File size must be less than 50MB')
+        return
+      }
+      setSelectedFile(file)
+    }
+  }
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -451,10 +557,45 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
       return
     }
 
+    setUploading(true)
+
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not found')
+
       let recordId: string
+      let filePath: string | null = null
+      let fileName: string | null = null
+      let fileSize: number | null = null
+      let fileType: string | null = null
+
+      // Upload file if selected
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop()
+        fileName = selectedFile.name
+        fileSize = selectedFile.size
+        fileType = selectedFile.type || 'application/octet-stream'
+        const fileNameUnique = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+        filePath = `${user.id}/healthcare/${fileNameUnique}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('family-documents')
+          .upload(filePath, selectedFile, {
+            cacheControl: '3600',
+            upsert: false,
+          })
+
+        if (uploadError) throw uploadError
+      }
 
       if (record) {
+        // If editing and a new file was uploaded, delete the old file
+        if (selectedFile && record.file_path) {
+          await supabase.storage
+            .from('family-documents')
+            .remove([record.file_path])
+        }
+
         const { error: updateError } = await supabase
           .from('healthcare_records')
           .update({
@@ -472,11 +613,23 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
             policy_number: policyNumber || null,
             group_number: groupNumber || null,
             notes: notes || null,
+            file_name: selectedFile ? fileName : record.file_name,
+            file_path: selectedFile ? filePath : record.file_path,
+            file_size: selectedFile ? fileSize : record.file_size,
+            file_type: selectedFile ? fileType : record.file_type,
             updated_at: new Date().toISOString(),
           })
           .eq('id', record.id)
 
-        if (updateError) throw updateError
+        if (updateError) {
+          // If update fails and we uploaded a new file, delete it
+          if (filePath) {
+            await supabase.storage
+              .from('family-documents')
+              .remove([filePath])
+          }
+          throw updateError
+        }
         recordId = record.id
       } else {
         const { data, error: insertError } = await supabase
@@ -498,11 +651,23 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
             policy_number: policyNumber || null,
             group_number: groupNumber || null,
             notes: notes || null,
+            file_name: fileName,
+            file_path: filePath,
+            file_size: fileSize,
+            file_type: fileType,
           })
           .select()
           .single()
 
-        if (insertError) throw insertError
+        if (insertError) {
+          // If insert fails and we uploaded a file, delete it
+          if (filePath) {
+            await supabase.storage
+              .from('family-documents')
+              .remove([filePath])
+          }
+          throw insertError
+        }
         recordId = data.id
       }
 
@@ -511,6 +676,8 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
     } catch (error) {
       console.error('Error saving healthcare record:', error)
       alert('Failed to save healthcare record. Please try again.')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -744,19 +911,103 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
             />
           </div>
 
+          {/* File Upload Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Attach Document (Optional)
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileSelect}
+              className="hidden"
+              disabled={uploading}
+            />
+            
+            {selectedFile ? (
+              <div className="border-2 border-indigo-200 bg-indigo-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FontAwesomeIcon icon={faFile} className="text-indigo-600 text-2xl" />
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedFile.name}</p>
+                      <p className="text-sm text-gray-600">{formatFileSize(selectedFile.size)}</p>
+                    </div>
+                  </div>
+                  {!uploading && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFile(null)
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = ''
+                        }
+                      }}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : record?.file_name ? (
+              <div className="border-2 border-gray-200 bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FontAwesomeIcon icon={faFile} className="text-gray-600 text-2xl" />
+                    <div>
+                      <p className="font-medium text-gray-900">{record.file_name}</p>
+                      <p className="text-sm text-gray-600">Current file - {record.file_size ? formatFileSize(record.file_size) : ''}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                  >
+                    Replace
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-indigo-400 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex flex-col items-center">
+                  <FontAwesomeIcon icon={faFile} className="text-4xl text-gray-400 mb-3" />
+                  <p className="text-gray-700 font-medium mb-1">Click to upload a file</p>
+                  <p className="text-sm text-gray-500">PDF, DOC, JPG, PNG (max 50MB)</p>
+                </div>
+              </button>
+            )}
+          </div>
+
           <div className="flex space-x-3 pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 btn-secondary"
+              disabled={uploading}
+              className="flex-1 btn-secondary disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 btn-primary"
+              disabled={uploading}
+              className="flex-1 btn-primary disabled:opacity-50"
             >
-              {record ? 'Update Record' : 'Add Record'}
+              {uploading ? (
+                <>
+                  <FontAwesomeIcon icon={faSpinner} className="mr-2 animate-spin" />
+                  {selectedFile ? 'Uploading...' : 'Saving...'}
+                </>
+              ) : (
+                record ? 'Update Record' : 'Add Record'
+              )}
             </button>
           </div>
         </form>

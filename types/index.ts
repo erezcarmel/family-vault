@@ -166,6 +166,10 @@ export interface HealthcareRecord {
   policy_number: string | null
   group_number: string | null
   notes: string | null
+  file_name: string | null
+  file_path: string | null
+  file_size: number | null
+  file_type: string | null
   created_at: string
   updated_at: string
 }
