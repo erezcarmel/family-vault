@@ -583,6 +583,7 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
           .upload(filePath, selectedFile, {
             cacheControl: '3600',
             upsert: false,
+            contentType: fileType,
           })
 
         if (uploadError) throw uploadError
