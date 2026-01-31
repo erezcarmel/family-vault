@@ -37,7 +37,15 @@ export async function POST(request: NextRequest) {
     apiKey: process.env.OPENAI_API_KEY,
   });
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (_parseError) {
+      return NextResponse.json(
+        {error: "Invalid JSON in request body"},
+        {status: 400}
+      );
+    }
     const {imageBase64, fileBase64, mimeType, filename, category, type} = body;
     const providedBase64 = fileBase64 ?? imageBase64;
 
@@ -65,6 +73,16 @@ export async function POST(request: NextRequest) {
           : "image/jpeg";
 
     const base64Data = normalizeBase64(providedBase64);
+    
+    // Check file size (base64 is ~1.33x the original size, limit to ~20MB original = ~27MB base64)
+    const maxBase64Size = 27 * 1024 * 1024; // 27MB in bytes
+    if (base64Data.length > maxBase64Size) {
+      return NextResponse.json(
+        {error: "File is too large. Please upload a file smaller than 20MB."},
+        {status: 413}
+      );
+    }
+    
     const isPdf = effectiveMimeType === "application/pdf";
 
     const fileOrImagePart =
@@ -143,7 +161,7 @@ export async function POST(request: NextRequest) {
         .replace(/```\n?/g, "")
         .trim();
       extractedData = JSON.parse(cleanContent);
-    } catch (parseError) {
+    } catch (_parseError) {
       console.error("Failed to parse OpenAI response:", content);
       return NextResponse.json(
         {error: "Failed to parse extracted data", rawResponse: content},
