@@ -42,6 +42,14 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
         }),
       })
 
+      // Check if the response is JSON before parsing
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        // If not JSON, try to get the text for error reporting
+        const text = await response.text()
+        throw new Error(`Server error - please try again. If the problem persists, ensure your file is a valid PDF or image, and contact support. Details: ${text.substring(0, 100)}`)
+      }
+
       const result = await response.json()
 
       if (!response.ok) {
