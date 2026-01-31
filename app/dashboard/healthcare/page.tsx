@@ -566,7 +566,11 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
 
       // Upload file if selected
       if (selectedFile) {
-        const fileExt = selectedFile.name.split('.').pop()
+        // Get file extension properly (handles files with or without extensions)
+        const fileNameParts = selectedFile.name.split('.')
+        const fileExt = fileNameParts.length > 1 && fileNameParts[fileNameParts.length - 1].length <= 5 
+          ? fileNameParts[fileNameParts.length - 1] 
+          : ''
         fileName = selectedFile.name
         fileSize = selectedFile.size
         fileType = selectedFile.type || 'application/octet-stream'
@@ -586,9 +590,14 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
       if (record) {
         // If editing and a new file was uploaded, delete the old file
         if (selectedFile && record.file_path) {
-          await supabase.storage
+          const { error: deleteError } = await supabase.storage
             .from('family-documents')
             .remove([record.file_path])
+          
+          if (deleteError) {
+            console.error('Warning: Failed to delete old file:', deleteError)
+            // Continue with update even if old file deletion fails
+          }
         }
 
         const { error: updateError } = await supabase
