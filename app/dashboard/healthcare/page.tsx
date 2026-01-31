@@ -9,6 +9,7 @@ import type { FamilyMember, HealthcareRecord, HealthcareProviderType } from '@/t
 export const dynamic = 'force-dynamic'
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024 // 50MB
+const MAX_FILE_EXTENSION_LENGTH = 5 // Reasonable max length for file extensions (e.g., .jpeg, .html)
 
 const providerTypes: { id: HealthcareProviderType; title: string }[] = [
   { id: 'primary_care', title: 'Primary Care' },
@@ -568,13 +569,14 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
       if (selectedFile) {
         // Get file extension properly (handles files with or without extensions)
         const fileNameParts = selectedFile.name.split('.')
-        const fileExt = fileNameParts.length > 1 && fileNameParts[fileNameParts.length - 1].length <= 5 
+        const fileExt = fileNameParts.length > 1 && fileNameParts[fileNameParts.length - 1].length <= MAX_FILE_EXTENSION_LENGTH 
           ? fileNameParts[fileNameParts.length - 1] 
           : ''
         fileName = selectedFile.name
         fileSize = selectedFile.size
         fileType = selectedFile.type || 'application/octet-stream'
-        const fileNameUnique = `${Date.now()}-${Math.random().toString(36).substring(2)}${fileExt ? `.${fileExt}` : ''}`
+        const uniqueId = crypto.randomUUID()
+        const fileNameUnique = `${Date.now()}-${uniqueId}${fileExt ? `.${fileExt}` : ''}`
         filePath = `${user.id}/healthcare/${fileNameUnique}`
 
         const { error: uploadError } = await supabase.storage
