@@ -570,7 +570,7 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
         fileName = selectedFile.name
         fileSize = selectedFile.size
         fileType = selectedFile.type || 'application/octet-stream'
-        const fileNameUnique = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+        const fileNameUnique = `${Date.now()}-${Math.random().toString(36).substring(2)}${fileExt ? `.${fileExt}` : ''}`
         filePath = `${user.id}/healthcare/${fileNameUnique}`
 
         const { error: uploadError } = await supabase.storage
@@ -952,7 +952,9 @@ function HealthcareModal({ isOpen, onClose, onSave, record, members, familyId }:
                     <FontAwesomeIcon icon={faFile} className="text-gray-600 text-2xl" />
                     <div>
                       <p className="font-medium text-gray-900">{record.file_name}</p>
-                      <p className="text-sm text-gray-600">Current file - {record.file_size ? formatFileSize(record.file_size) : ''}</p>
+                      <p className="text-sm text-gray-600">
+                        Current file{record.file_size ? ` - ${formatFileSize(record.file_size)}` : ''}
+                      </p>
                     </div>
                   </div>
                   <button
