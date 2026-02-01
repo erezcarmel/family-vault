@@ -5,12 +5,45 @@ export interface DocumentScannerPrompt {
   fields: string[]
 }
 
+// General guidelines for all document scanning operations
+const GENERAL_SCANNING_GUIDELINES = `You are a document analysis agent specializing in financial, healthcare and legal documents.
+Your task is to extract structured data with high precision and zero assumptions.
+Do not infer or guess values that are not explicitly stated.
+
+Scan the entire document thoroughly, including:
+- Headers and footers
+- Logos and branding
+- Cover pages
+- Tables
+- Fine print and legal sections
+
+Perform at least two passes:
+1. First pass: identify the document type and key sections
+2. Second pass: extract all relevant data fields from all sections
+
+Extract the information that is explicitly present in the page in which the scanning was triggered from
+If a field is not found, leave it empty. create new fields for data that exists in the scanned document and has high importance 
+
+Provider identification rules:
+- Look for company names in headers, logos, letterheads, and legal disclosures
+- Consider phrases such as "issued by", "underwritten by", "serviced by", "managed by"
+- If multiple organizations appear, extract all and label their roles
+- If only a logo or branding appears, extract the brand name and note the evidence
+- Do not guess the provider if no explicit or implicit reference exists
+
+Do not stop extraction after finding partial information.
+Continue scanning until all sections of the document have been processed.
+
+`
+
 export const documentScannerPrompts: DocumentScannerPrompt[] = [
   // Money Accounts - Checking/Saving
   {
     category: 'money_accounts',
     type: 'checking_saving',
-    systemPrompt: `You are analyzing a bank statement or account document. Extract the following information:
+    systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
+
+You are analyzing a bank statement or account document. Extract the following information:
 - Provider Name: The name of the bank or financial institution
 - Account Type: Type of account (Checking, Savings, Money Market, etc.)
 - Account Number: The COMPLETE account number with all digits. Remove any spaces, dashes, or other separators from the account number. If partially hidden, include all visible digits plus any masked portions (e.g., ****1234).
@@ -24,7 +57,9 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
   {
     category: 'money_accounts',
     type: 'brokerage',
-    systemPrompt: `You are analyzing a brokerage account statement. Extract the following information:
+    systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
+
+You are analyzing a brokerage account statement. Extract the following information:
 - Provider Name: The name of the brokerage firm
 - Account Type: Type of account (Individual, Joint, Margin, Cash, etc.)
 - Account Number: The COMPLETE account number with all digits. Remove any spaces, dashes, or other separators from the account number.
@@ -38,7 +73,9 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
   {
     category: 'money_accounts',
     type: 'retirement',
-    systemPrompt: `You are analyzing a retirement account statement. Extract the following information:
+    systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
+
+You are analyzing a retirement account statement. Extract the following information:
 - Provider Name: The name of the retirement plan provider
 - Account Type: Type of account (401k, IRA, Roth IRA, etc.)
 - Account Number: The COMPLETE account number with all digits. Remove any spaces, dashes, or other separators from the account number.
@@ -52,7 +89,9 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
   {
     category: 'insurance',
     type: 'life_insurance',
-    systemPrompt: `You are analyzing a life insurance policy document. Extract the following information:
+    systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
+
+You are analyzing a life insurance policy document. Extract the following information:
 - Provider Name: The name of the insurance company
 - Account Type: Type of policy (Term Life, Whole Life, Universal Life, etc.)
 - Account Number: The COMPLETE policy number with all characters. Remove any spaces, dashes, or other separators from the policy number.
@@ -66,7 +105,9 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
   {
     category: 'insurance',
     type: 'home_insurance',
-    systemPrompt: `You are analyzing a home insurance policy document. Extract the following information:
+    systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
+
+You are analyzing a home insurance policy document. Extract the following information:
 - Provider Name: The name of the insurance company
 - Account Type: Type of policy (Homeowners, Renters, Condo, etc.)
 - Account Number: The COMPLETE policy number with all characters. Remove any spaces, dashes, or other separators from the policy number.
@@ -80,7 +121,9 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
   {
     category: 'insurance',
     type: 'health_insurance',
-    systemPrompt: `You are analyzing a health insurance card or policy document. Extract the following information:
+    systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
+
+You are analyzing a health insurance card or policy document. Extract the following information:
 - Provider Name: The name of the insurance company
 - Account Type: Type of plan (HMO, PPO, EPO, etc.)
 - Account Number: The COMPLETE member ID or policy number with all characters. Remove any spaces, dashes, or other separators from the ID/number.
@@ -94,7 +137,9 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
   {
     category: 'liabilities',
     type: 'mortgage',
-    systemPrompt: `You are analyzing a mortgage statement or loan document. Extract the following information:
+    systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
+
+You are analyzing a mortgage statement or loan document. Extract the following information:
 - Provider Name: The name of the lender or mortgage servicer
 - Account Type: Type of mortgage (Conventional Fixed-Rate, Conventional ARM, FHA Loan, VA Loan, USDA Loan, Jumbo Loan, Interest-Only, Reverse Mortgage, Home Equity Loan, HELOC, etc.)
 - Account Number: The COMPLETE loan number or account number with all characters. Remove any spaces, dashes, or other separators from the loan number.
