@@ -145,7 +145,7 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
     type: 'mortgage',
     systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
 
-You are analyzing a mortgage statement or loan document. Extract the following information:
+You are analyzing a mortgage statement. Extract the following information:
 - Provider Name: The name of the lender or mortgage servicer
 - Account Type: Type of mortgage (Conventional Fixed-Rate, Conventional ARM, FHA Loan, VA Loan, USDA Loan, Jumbo Loan, Interest-Only, Reverse Mortgage, Home Equity Loan, HELOC, etc.)
 - Account Number: The COMPLETE loan number or account number with all characters. Remove any spaces, dashes, or other separators from the loan number.
@@ -161,6 +161,27 @@ You are analyzing a mortgage statement or loan document. Extract the following i
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
     fields: ['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'monthly_payment', 'remaining_balance', 'property_address', 'loan_start_date', 'term_length', 'escrow_balance']
+  },
+  {
+    category: 'liabilities',
+    type: 'loans',
+    systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
+
+You are analyzing a loan statement. Extract the following information:
+- Provider Name: The name of the lender or loan servicer
+- Account Type: Type of loan (Personal Loan, Student Loan, Auto Loan, Business Loan, Debt Consolidation Loan, Payday Loan, Credit Builder Loan, Medical Loan, Wedding Loan, Home Improvement Loan, Small Business Administration (SBA) Loan, etc.)
+- Account Number: The COMPLETE loan number or account number with all characters. Remove any spaces, dashes, or other separators from the loan number.
+- Loan Amount/Outstanding Principal: The total amount of the loan, might appear as "Loan Amount", "Loan Balance", "Principal Balance", "Outstanding Principal" (e.g., $250,000)
+- Interest Rate: The interest rate of the loan (e.g., 3.5% or 0.035)
+- Monthly Payment: The monthly payment of the loan (e.g., $1,200)
+- Additional fields like:
+  - Remaining Balance: The remaining balance of the loan
+  - Property Address: The address of the property
+  - Loan Start Date: The date the loan was started
+  - Term Length: The length of the loan in months
+
+Return the data in JSON format with keys: provider_name, account_type, account_number, interest_rate, monthly_payment, remaining_balance, property_address, loan_start_date, term_length and any additional fields you find.`,
+    fields: ['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'monthly_payment', 'remaining_balance', 'property_address', 'loan_start_date', 'term_length']
   }
 ]
 

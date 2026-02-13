@@ -386,9 +386,13 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     if (data.provider_name) setProviderName(String(data.provider_name))
     if (data.account_type) setAccountType(String(data.account_type))
     if (data.account_number) setAccountNumber(String(data.account_number))
+    if (data.loan_amount) setLoanAmount(String(data.loan_amount))
+    if (data.interest_rate) setInterestRate(String(data.interest_rate))
+    if (data.monthly_payment) setMonthlyPayment(String(data.monthly_payment))
+    if (data.term_length) setTermLength(String(data.term_length))
 
     // Set custom fields (anything that's not the main fields)
-    const mainFields = ['provider_name', 'account_type', 'account_number']
+    const mainFields = ['provider_name', 'account_type', 'account_number', 'loan_amount', 'interest_rate', 'monthly_payment', 'term_length']
     const customFieldsData: CustomField[] = []
     
     Object.entries(data).forEach(([key, value]) => {

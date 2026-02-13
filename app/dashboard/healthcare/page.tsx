@@ -165,8 +165,8 @@ export default function Healthcare() {
                 onClick={() => setSelectedFilter('all')}
                 className={`px-4 py-2 rounded-lg border transition-all ${
                   selectedFilter === 'all'
-                    ? 'bg-pink-600 text-white border-pink-600 shadow-md'
-                    : 'bg-white text-gray-900 border-gray-200 hover:border-pink-400 hover:bg-pink-50'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                    : 'bg-white text-gray-900 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'
                 }`}
               >
                 <span className="font-medium">All</span>
@@ -182,8 +182,8 @@ export default function Healthcare() {
                     onClick={() => setSelectedFilter(pt.id)}
                     className={`px-4 py-2 rounded-lg border transition-all ${
                       selectedFilter === pt.id
-                        ? 'bg-pink-600 text-white border-pink-600 shadow-md'
-                        : 'bg-white text-gray-900 border-gray-200 hover:border-pink-400 hover:bg-pink-50'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                        : 'bg-white text-gray-900 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'
                     }`}
                   >
                     <span className="font-medium">{pt.title}</span>
