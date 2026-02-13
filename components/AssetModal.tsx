@@ -251,7 +251,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     checkSocialEmailStatus()
   }, [socialEmail, category, subCategory, familyId])
 
-  // Load account types when sub-category changes
+  // Load account types and family members when sub-category changes
   useEffect(() => {
     if (subCategory) {
       loadAccountTypes(subCategory)
