@@ -34,6 +34,12 @@ Provider identification rules:
 Do not stop extraction after finding partial information.
 Continue scanning until all sections of the document have been processed.
 
+Return format:
+- Always return flat JSON objects with simple key-value pairs
+- Do NOT use nested objects or hierarchical structures
+- Use clear, descriptive field names with underscores (e.g., provider_name, account_type)
+- If you need to represent related data, use prefixed keys (e.g., beneficiary_name, beneficiary_address) instead of nested objects
+
 `
 
 export const documentScannerPrompts: DocumentScannerPrompt[] = [
