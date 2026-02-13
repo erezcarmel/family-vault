@@ -34,7 +34,6 @@ interface AssetModalProps {
 
 export default function AssetModal({ isOpen, onClose, onSave, asset, subCategories, category }: AssetModalProps) {
   const [providerName, setProviderName] = useState('')
-  const [customProviderName, setCustomProviderName] = useState('')
   const [accountType, setAccountType] = useState('')
   const [customAccountType, setCustomAccountType] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
@@ -42,9 +41,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   const [customFields, setCustomFields] = useState<CustomField[]>([])
   const [newFieldName, setNewFieldName] = useState('')
   const [newFieldValue, setNewFieldValue] = useState('')
-  const [providers, setProviders] = useState<Provider[]>([])
   const [accountTypes, setAccountTypes] = useState<AccountType[]>([])
-  const [loadingProviders, setLoadingProviders] = useState(false)
   const [loadingAccountTypes, setLoadingAccountTypes] = useState(false)
   
   // Liability-specific fields
@@ -254,36 +251,15 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     checkSocialEmailStatus()
   }, [socialEmail, category, subCategory, familyId])
 
-  // Load providers and account types when sub-category changes
+  // Load account types when sub-category changes
   useEffect(() => {
     if (subCategory) {
-      loadProviders(subCategory)
       loadAccountTypes(subCategory)
       if (subCategory === 'phone_access') {
         loadFamilyMembers()
       }
     }
   }, [subCategory])
-
-  const loadProviders = async (type: string) => {
-    setLoadingProviders(true)
-    try {
-      const { data, error } = await supabase
-        .from('providers')
-        .select('*')
-        .eq('category', category)
-        .eq('type', type)
-        .order('name')
-
-      if (error) throw error
-      setProviders(data || [])
-    } catch (error) {
-      console.error('Error loading providers:', error)
-      setProviders([])
-    } finally {
-      setLoadingProviders(false)
-    }
-  }
 
   const loadAccountTypes = async (type: string) => {
     setLoadingAccountTypes(true)
@@ -340,7 +316,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
 
   const resetForm = () => {
     setProviderName('')
-    setCustomProviderName('')
     setAccountType('')
     setCustomAccountType('')
     setAccountNumber('')
@@ -348,7 +323,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     setCustomFields([])
     setNewFieldName('')
     setNewFieldValue('')
-    setProviders([])
     setAccountTypes([])
     setLoanAmount('')
     setInterestRate('')
@@ -433,8 +407,6 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
     
     if (!subCategory) return
 
-    // Use custom provider name if "__custom__" was selected
-    const finalProviderName = providerName === '__custom__' ? customProviderName : providerName
     const finalAccountType = accountType === '__custom__' ? customAccountType : accountType
 
     // Validation for email account-specific fields
@@ -496,7 +468,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
         return
       }
     } else {
-      if (!finalProviderName) {
+      if (!providerName) {
         alert('Please enter a provider name')
         return
       }
@@ -537,7 +509,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
       if (socialPassword) data.social_password = socialPassword
     } else {
       // For other categories, include standard fields
-      data.provider_name = finalProviderName
+      data.provider_name = providerName
       data.account_type = finalAccountType
       data.account_number = accountNumber
       
@@ -623,54 +595,14 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Provider Name *
               </label>
-              {subCategory && providers.length > 0 ? (
-                <div className="space-y-2">
-                  <select
-                    value={providerName}
-                    onChange={(e) => {
-                      setProviderName(e.target.value)
-                      if (e.target.value !== '__custom__') {
-                        setCustomProviderName('')
-                      }
-                    }}
-                    className="input-field"
-                    required
-                  >
-                    <option value="">Select a provider</option>
-                    {providers.map((provider) => (
-                      <option key={provider.id} value={provider.name}>
-                        {provider.name}
-                      </option>
-                    ))}
-                    <option value="__custom__">Other (Enter manually)</option>
-                  </select>
-                  {providerName === '__custom__' && (
-                    <input
-                      type="text"
-                      value={customProviderName}
-                      onChange={(e) => setCustomProviderName(e.target.value)}
-                      className="input-field"
-                      placeholder="Enter provider name"
-                      required
-                    />
-                  )}
-                </div>
-              ) : (
-                <input
-                  type="text"
-                  value={providerName}
-                  onChange={(e) => setProviderName(e.target.value)}
-                  className="input-field"
-                  placeholder={loadingProviders ? "Loading providers..." : "e.g., Bank of America, State Farm"}
-                  disabled={loadingProviders}
-                  required
-                />
-              )}
-              {!subCategory && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Select a sub-category first to see provider options
-                </p>
-              )}
+              <input
+                type="text"
+                value={providerName}
+                onChange={(e) => setProviderName(e.target.value)}
+                className="input-field"
+                placeholder="e.g., Bank of America, State Farm"
+                required
+              />
             </div>
           )}
 
@@ -1081,26 +1013,14 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cloud Storage Provider *
                 </label>
-                {subCategory && providers.length > 0 ? (
-                  <select
-                    value={cloudProvider}
-                    onChange={(e) => setCloudProvider(e.target.value)}
-                    className="input-field"
-                    required
-                  >
-                    <option value="">Select a cloud storage provider</option>
-                    {providers.map((provider) => (
-                      <option key={provider.id} value={provider.name}>
-                        {provider.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="input-field text-gray-500">Loading providers...</div>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  Choose from the most common cloud storage providers
-                </p>
+                <input
+                  type="text"
+                  value={cloudProvider}
+                  onChange={(e) => setCloudProvider(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., Google Drive, Dropbox, OneDrive"
+                  required
+                />
               </div>
 
               <div>
