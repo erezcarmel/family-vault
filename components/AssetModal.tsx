@@ -254,12 +254,15 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
   // Load account types and family members when sub-category changes
   useEffect(() => {
     if (subCategory) {
-      loadAccountTypes(subCategory)
+      // Skip loading account types for insurance category
+      if (category !== 'insurance') {
+        loadAccountTypes(subCategory)
+      }
       if (subCategory === 'phone_access') {
         loadFamilyMembers()
       }
     }
-  }, [subCategory])
+  }, [subCategory, category])
 
   const loadAccountTypes = async (type: string) => {
     setLoadingAccountTypes(true)
@@ -612,7 +615,15 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account/Policy Type
               </label>
-              {subCategory && accountTypes.length > 0 ? (
+              {category === 'insurance' ? (
+                <input
+                  type="text"
+                  value={accountType}
+                  onChange={(e) => setAccountType(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., Term Life, Whole Life, Homeowners"
+                />
+              ) : subCategory && accountTypes.length > 0 ? (
                 <div className="space-y-2">
                   <select
                     value={accountType}
@@ -652,7 +663,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
                   disabled={loadingAccountTypes}
                 />
               )}
-              {!subCategory && (
+              {!subCategory && category !== 'insurance' && (
                 <p className="text-xs text-gray-500 mt-1">
                   Select a sub-category first to see account type options
                 </p>
