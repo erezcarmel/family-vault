@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faEnvelope, faPlus, faTrash, faUsers, faEdit, faCamera, faTimes, faShieldAlt, faUserEdit, faPaperPlane } from '@fortawesome/free-solid-svg-icons'
+import PageHeader from '@/components/PageHeader'
 import type { FamilyMember, FamilyConnection, UserRole } from '@/types'
 import { getFamilyId, isEditorOrAdmin } from '@/lib/db-helpers-client'
 
@@ -506,26 +507,15 @@ export default function FamilyTree() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-            <FontAwesomeIcon icon={faUsers} className="text-white text-xl" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Family Tree</h1>
-            <p className="text-gray-600">Manage your family members</p>
-          </div>
-        </div>
-
-        {canEdit && (
-          <button
-            onClick={() => setIsAdding(!isAdding)}
-            className="btn-primary"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add Member
-          </button>
-        )}
+      <div className="mb-8">
+        <PageHeader
+          title="Family Tree"
+          description="Manage your family members"
+          icon={faUsers}
+          iconBgClassName="bg-purple-500"
+          onAddClick={canEdit ? () => setIsAdding(!isAdding) : undefined}
+          addButtonLabel={canEdit ? 'Add Member' : undefined}
+        />
       </div>
 
       {/* Add/Edit Member Form */}

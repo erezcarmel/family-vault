@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faEnvelope, faShieldAlt, faUsers, faCalendar } from '@fortawesome/free-solid-svg-icons'
+import PageHeader from '@/components/PageHeader'
 import { getFamilyId, getUserRole } from '@/lib/db-helpers-client'
 import type { UserRole } from '@/types'
 
@@ -104,14 +105,13 @@ export default function Profile() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex items-center space-x-4 mb-8">
-        <div className="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center">
-          <FontAwesomeIcon icon={faUser} className="text-white text-xl" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-gray-600">View your account information</p>
-        </div>
+      <div className="mb-8">
+        <PageHeader
+          title="My Profile"
+          description="View your account information"
+          icon={faUser}
+          iconBgClassName="bg-indigo-600"
+        />
       </div>
 
       <div className="card">

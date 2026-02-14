@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faHeartPulse, faTimes, faTrash, faEdit, faChevronDown, faChevronUp, faFile, faDownload, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import PageHeader from '@/components/PageHeader'
 import type { FamilyMember, HealthcareRecord, HealthcareProviderType } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -152,26 +153,15 @@ export default function Healthcare() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-pink-500 rounded-lg flex items-center justify-center">
-            <FontAwesomeIcon icon={faHeartPulse} className="text-white text-xl" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Healthcare</h1>
-            <p className="text-gray-600">Manage healthcare information for your family</p>
-          </div>
-        </div>
-
-        {members.length > 0 && (
-          <button
-            onClick={handleAddNew}
-            className="btn-primary"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add Healthcare Record
-          </button>
-        )}
+      <div className="mb-8">
+        <PageHeader
+          title="Healthcare"
+          description="Manage healthcare information for your family"
+          icon={faHeartPulse}
+          iconBgClassName="bg-pink-500"
+          onAddClick={members.length > 0 ? handleAddNew : undefined}
+          addButtonLabel={members.length > 0 ? 'Add Healthcare Record' : undefined}
+        />
       </div>
 
       {members.length === 0 ? (

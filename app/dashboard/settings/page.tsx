@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCog, faUsers, faUser } from '@fortawesome/free-solid-svg-icons'
+import PageHeader from '@/components/PageHeader'
 
 export default function Settings() {
   const router = useRouter()
@@ -28,14 +29,13 @@ export default function Settings() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center space-x-4 mb-8">
-        <div className="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center">
-          <FontAwesomeIcon icon={faCog} className="text-white text-xl" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600">Manage your account settings and preferences</p>
-        </div>
+      <div className="mb-8">
+        <PageHeader
+          title="Settings"
+          description="Manage your account settings and preferences"
+          icon={faCog}
+          iconBgClassName="bg-indigo-600"
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

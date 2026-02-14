@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faEnvelope, faPlus, faTrash, faUserTie, faEdit, faKey, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
+import PageHeader from '@/components/PageHeader'
 import type { Executor } from '@/types'
 import { getFamilyId, isAdmin } from '@/lib/db-helpers-client'
 
@@ -163,24 +164,15 @@ export default function Executors() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-teal-500 rounded-lg flex items-center justify-center">
-            <FontAwesomeIcon icon={faUserTie} className="text-white text-xl" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Executors</h1>
-            <p className="text-gray-600">Manage people with read-only access to your family vault</p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="btn-primary"
-        >
-          <FontAwesomeIcon icon={faPlus} className="mr-2" />
-          Add Executor
-        </button>
+      <div className="mb-8">
+        <PageHeader
+          title="Executors"
+          description="Manage people with read-only access to your family vault"
+          icon={faUserTie}
+          iconBgClassName="bg-teal-500"
+          onAddClick={() => setIsAdding(!isAdding)}
+          addButtonLabel="Add Executor"
+        />
       </div>
 
       {/* Info Box */}

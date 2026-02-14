@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faFileAlt, faDownload, faTrash, faSpinner, faEdit } from '@fortawesome/free-solid-svg-icons'
 import UploadDocumentModal from '@/components/UploadDocumentModal'
+import PageHeader from '@/components/PageHeader'
 import type { Document } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -168,24 +169,15 @@ export default function Documents() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-            <FontAwesomeIcon icon={faFileAlt} className="text-white text-xl" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
-            <p className="text-gray-600">Upload and manage your important documents</p>
-          </div>
-        </div>
-
-        <button
-          onClick={handleAddNew}
-          className="btn-primary"
-        >
-          <FontAwesomeIcon icon={faPlus} className="mr-2" />
-          Upload Document
-        </button>
+      <div className="mb-8">
+        <PageHeader
+          title="Documents"
+          description="Upload and manage your important documents"
+          icon={faFileAlt}
+          iconBgClassName="bg-purple-500"
+          onAddClick={handleAddNew}
+          addButtonLabel="Upload Document"
+        />
       </div>
 
       {/* Documents Grid */}

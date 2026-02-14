@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUsers, faPlus, faTrash, faEdit, faShieldAlt, faUserEdit, faUser, faEnvelope, faClock, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons'
+import PageHeader from '@/components/PageHeader'
 import type { FamilyUser, UserRole, Invitation } from '@/types'
 import { getFamilyId, isAdmin, getUserRole } from '@/lib/db-helpers-client'
 
@@ -273,43 +274,32 @@ export default function UserManagement() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-            <FontAwesomeIcon icon={faUsers} className="text-white text-xl" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-            <p className="text-gray-600">Manage family members and their permissions</p>
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => {
-              setIsInviting(!isInviting)
-              setIsAdding(false)
-              setNewInvitation({ email: '', role: 'member' })
-              setError(null)
-            }}
-            className="btn-secondary"
-          >
-            <FontAwesomeIcon icon={faEnvelope} className="mr-2" />
-            Invite User
-          </button>
-          <button
-            onClick={() => {
-              setIsAdding(!isAdding)
-              setIsInviting(false)
-              setEditingUser(null)
-              setNewUser({ email: '', role: 'member' })
-              setError(null)
-            }}
-            className="btn-primary"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add User
-          </button>
-        </div>
+        <PageHeader
+          title="User Management"
+          description="Manage family members and their permissions"
+          icon={faUsers}
+          iconBgClassName="bg-purple-500"
+          onAddClick={() => {
+            setIsAdding(!isAdding)
+            setIsInviting(false)
+            setEditingUser(null)
+            setNewUser({ email: '', role: 'member' })
+            setError(null)
+          }}
+          addButtonLabel="Add User"
+        />
+        <button
+          onClick={() => {
+            setIsInviting(!isInviting)
+            setIsAdding(false)
+            setNewInvitation({ email: '', role: 'member' })
+            setError(null)
+          }}
+          className="btn-secondary"
+        >
+          <FontAwesomeIcon icon={faEnvelope} className="mr-2" />
+          Invite User
+        </button>
       </div>
 
       {error && (

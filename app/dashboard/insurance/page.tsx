@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faShieldAlt } from '@fortawesome/free-solid-svg-icons'
 import AssetCard from '@/components/AssetCard'
 import AssetModal from '@/components/AssetModal'
+import PageHeader from '@/components/PageHeader'
 import type { Asset, AssetType } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -146,24 +147,15 @@ export default function Insurance() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-            <FontAwesomeIcon icon={faShieldAlt} className="text-white text-xl" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Insurance</h1>
-            <p className="text-gray-600">Manage your insurance policies</p>
-          </div>
-        </div>
-
-        <button
-          onClick={handleAddNew}
-          className="btn-primary"
-        >
-          <FontAwesomeIcon icon={faPlus} className="mr-2" />
-          Add Policy
-        </button>
+      <div className="mb-8">
+        <PageHeader
+          title="Insurance"
+          description="Manage your insurance policies"
+          icon={faShieldAlt}
+          iconBgClassName="bg-blue-500"
+          onAddClick={handleAddNew}
+          addButtonLabel="Add Policy"
+        />
       </div>
 
       {/* Filter by Sub-Category */}
