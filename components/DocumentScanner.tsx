@@ -16,6 +16,7 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
   const [fileName, setFileName] = useState<string>('')
   const [scanStatus, setScanStatus] = useState<string>('')
   const [scanCompleted, setScanCompleted] = useState(false)
+  const [scanError, setScanError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,6 +25,7 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
       setFileName(file.name)
       setScanStatus('')
       setScanCompleted(false)
+      setScanError(false)
       const reader = new FileReader()
       reader.onloadend = () => {
         setUploadedImage(reader.result as string)
@@ -67,10 +69,13 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
         onDataExtracted(result.data)
         setScanStatus('Document scanned successfully! Please review and edit the extracted data.')
         setScanCompleted(true)
+        setScanError(false)
       }
     } catch (error: any) {
       console.error('Error scanning document:', error)
       setScanStatus(`Failed to scan document: ${error.message}`)
+      setScanError(true)
+      setScanCompleted(false)
     } finally {
       setScanningDocument(false)
     }
@@ -115,6 +120,7 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
                   setFileName('')
                   setScanStatus('')
                   setScanCompleted(false)
+                  setScanError(false)
                 }}
                 className="text-red-600 hover:text-red-700"
               >
@@ -178,9 +184,9 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
 
         {scanStatus && (
           <p className={`text-xs rounded px-3 py-2 ${
-            scanCompleted 
-              ? 'text-green-700 bg-green-50 border border-green-200' 
-              : 'text-red-700 bg-red-50 border border-red-200'
+            scanError
+              ? 'text-red-700 bg-red-50 border border-red-200' 
+              : 'text-green-700 bg-green-50 border border-green-200'
           }`}>
             {scanStatus}
           </p>
