@@ -13,11 +13,17 @@ interface DocumentScannerProps {
 export default function DocumentScanner({ category, subCategory, onDataExtracted }: DocumentScannerProps) {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [scanningDocument, setScanningDocument] = useState(false)
+  const [fileName, setFileName] = useState<string>('')
+  const [scanStatus, setScanStatus] = useState<string>('')
+  const [scanCompleted, setScanCompleted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      setFileName(file.name)
+      setScanStatus('')
+      setScanCompleted(false)
       const reader = new FileReader()
       reader.onloadend = () => {
         setUploadedImage(reader.result as string)
@@ -59,11 +65,12 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
       // Pass extracted data to parent
       if (result.data) {
         onDataExtracted(result.data)
-        alert('Document scanned successfully! Please review and edit the extracted data.')
+        setScanStatus('Document scanned successfully! Please review and edit the extracted data.')
+        setScanCompleted(true)
       }
     } catch (error: any) {
       console.error('Error scanning document:', error)
-      alert(`Failed to scan document: ${error.message}`)
+      setScanStatus(`Failed to scan document: ${error.message}`)
     } finally {
       setScanningDocument(false)
     }
@@ -98,13 +105,17 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
               <div className="flex items-center gap-3">
                 <FontAwesomeIcon icon={faFile} className="text-indigo-600 text-2xl" />
                 <div>
-                  <p className="font-medium text-gray-900">Document uploaded</p>
-                  <p className="text-sm text-gray-600">Ready to scan</p>
+                  <p className="font-medium text-gray-900">{fileName}</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setUploadedImage(null)}
+                onClick={() => {
+                  setUploadedImage(null)
+                  setFileName('')
+                  setScanStatus('')
+                  setScanCompleted(false)
+                }}
                 className="text-red-600 hover:text-red-700"
               >
                 <FontAwesomeIcon icon={faTimes} />
@@ -114,34 +125,47 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
         )}
 
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={scanningDocument}
-            className="flex-1 btn-secondary disabled:opacity-50"
-          >
-            <FontAwesomeIcon icon={faCamera} className="mr-2" />
-            {uploadedImage ? 'Change Document' : 'Upload Document'}
-          </button>
+          {!scanCompleted ? (
+            <>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={scanningDocument}
+                className="flex-1 btn-secondary disabled:opacity-50"
+              >
+                <FontAwesomeIcon icon={faCamera} className="mr-2" />
+                {uploadedImage ? 'Change Document' : 'Upload Document'}
+              </button>
 
-          {uploadedImage && (
+              {uploadedImage && (
+                <button
+                  type="button"
+                  onClick={() => scanDocument(uploadedImage)}
+                  disabled={scanningDocument || !subCategory}
+                  className="flex-1 btn-primary disabled:opacity-50"
+                >
+                  {scanningDocument ? (
+                    <>
+                      <FontAwesomeIcon icon={faSpinner} className="mr-2 animate-spin" />
+                      Scanning...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faCamera} className="mr-2" />
+                      Scan Document
+                    </>
+                  )}
+                </button>
+              )}
+            </>
+          ) : (
             <button
               type="button"
-              onClick={() => scanDocument(uploadedImage)}
-              disabled={scanningDocument || !subCategory}
-              className="flex-1 btn-primary disabled:opacity-50"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full btn-secondary"
             >
-              {scanningDocument ? (
-                <>
-                  <FontAwesomeIcon icon={faSpinner} className="mr-2 animate-spin" />
-                  Scanning...
-                </>
-              ) : (
-                <>
-                  <FontAwesomeIcon icon={faCamera} className="mr-2" />
-                  Scan Document
-                </>
-              )}
+              <FontAwesomeIcon icon={faCamera} className="mr-2" />
+              Change Document
             </button>
           )}
         </div>
@@ -149,6 +173,16 @@ export default function DocumentScanner({ category, subCategory, onDataExtracted
         {!subCategory && uploadedImage && (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
             Please select a sub-category first to enable document scanning
+          </p>
+        )}
+
+        {scanStatus && (
+          <p className={`text-xs rounded px-3 py-2 ${
+            scanCompleted 
+              ? 'text-green-700 bg-green-50 border border-green-200' 
+              : 'text-red-700 bg-red-50 border border-red-200'
+          }`}>
+            {scanStatus}
           </p>
         )}
       </div>
