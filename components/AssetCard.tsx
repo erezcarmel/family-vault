@@ -102,8 +102,19 @@ export default function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
     checkEmailFields()
   }, [asset, customFields, isEmailAccount, supabase, isSocialAccount])
 
+  // Format type for display (e.g. "email_accounts" -> "Email Accounts")
+  const typeLabel = asset.type
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+
   return (
     <div className="card hover:shadow-lg transition-shadow">
+      <div className="flex items-center justify-between mb-3">
+        <span className="inline-flex text-xs font-medium text-indigo-800">
+          {typeLabel}
+        </span>
+      </div>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {isEmailAccount ? (
