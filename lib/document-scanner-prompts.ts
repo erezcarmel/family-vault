@@ -42,6 +42,9 @@ Return format:
 
 `
 
+// Money accounts specific guidance for Account/Policy Type
+const MONEY_ACCOUNT_TYPE_GUIDANCE = `If you can't decide on the Account/Policy Type, don't leave the Account/Policy Type field unselected. Use the Other manual field to insert the Account/Policy Type by returning a custom value that describes the account type.`
+
 export const documentScannerPrompts: DocumentScannerPrompt[] = [
   // Money Accounts - Checking/Saving
   {
@@ -56,6 +59,8 @@ You are analyzing a bank statement or account document. Extract the following in
 - Additional fields like: balance, routing number, interest rate, account holder name
 
 Based on the data extracted from the scanned document, match the right Account/Policy Type and don't leave it blank.
+
+${MONEY_ACCOUNT_TYPE_GUIDANCE}
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
     fields: ['provider_name', 'account_type', 'account_number', 'balance', 'routing_number', 'account_holder']
@@ -75,6 +80,8 @@ You are analyzing a brokerage account statement. Extract the following informati
 
 Based on the data extracted from the scanned document, match the right Account/Policy Type and don't leave it blank.
 
+${MONEY_ACCOUNT_TYPE_GUIDANCE}
+
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
     fields: ['provider_name', 'account_type', 'account_number', 'total_value', 'cash_balance', 'account_holder']
   },
@@ -92,6 +99,8 @@ You are analyzing a retirement account statement. Extract the following informat
 - Additional fields like: total balance, vested balance, employer, contribution rate
 
 Based on the data extracted from the scanned document, match the right Account/Policy Type and don't leave it blank.
+
+${MONEY_ACCOUNT_TYPE_GUIDANCE}
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
     fields: ['provider_name', 'account_type', 'account_number', 'total_balance', 'vested_balance', 'employer']

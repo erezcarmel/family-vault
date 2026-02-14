@@ -25,14 +25,11 @@ CREATE POLICY "Anyone can view account types"
 
 -- Checking/Saving Account types
 INSERT INTO public.account_types (name, category, type) VALUES
-  ('Checking Account', 'money_accounts', 'checking_saving'),
-  ('Savings Account', 'money_accounts', 'checking_saving'),
-  ('Money Market Account', 'money_accounts', 'checking_saving'),
-  ('Certificate of Deposit (CD)', 'money_accounts', 'checking_saving'),
-  ('High-Yield Savings Account', 'money_accounts', 'checking_saving'),
-  ('Student Checking Account', 'money_accounts', 'checking_saving'),
-  ('Business Checking Account', 'money_accounts', 'checking_saving'),
-  ('Joint Account', 'money_accounts', 'checking_saving');
+  ('Checking account', 'money_accounts', 'checking_saving'),
+  ('Saving account', 'money_accounts', 'checking_saving'),
+  ('Certificate of deposit (CD)', 'money_accounts', 'checking_saving'),
+  ('Money market account', 'money_accounts', 'checking_saving'),
+  ('Student checking account', 'money_accounts', 'checking_saving');
 
 -- Brokerage Account types
 INSERT INTO public.account_types (name, category, type) VALUES
