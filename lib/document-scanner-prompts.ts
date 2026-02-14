@@ -55,6 +55,8 @@ You are analyzing a bank statement or account document. Extract the following in
 - Account Number: The COMPLETE account number with all digits. Remove any spaces, dashes, or other separators from the account number. If partially hidden, include all visible digits plus any masked portions (e.g., ****1234).
 - Additional fields like: balance, routing number, interest rate, account holder name
 
+Based on the data extracted from the scanned document, match the right Account/Policy Type and don't leave it blank.
+
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
     fields: ['provider_name', 'account_type', 'account_number', 'balance', 'routing_number', 'account_holder']
   },
@@ -71,6 +73,8 @@ You are analyzing a brokerage account statement. Extract the following informati
 - Account Number: The COMPLETE account number with all digits. Remove any spaces, dashes, or other separators from the account number.
 - Additional fields like: total value, cash balance, account holder name
 
+Based on the data extracted from the scanned document, match the right Account/Policy Type and don't leave it blank.
+
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
     fields: ['provider_name', 'account_type', 'account_number', 'total_value', 'cash_balance', 'account_holder']
   },
@@ -86,6 +90,8 @@ You are analyzing a retirement account statement. Extract the following informat
 - Account Type: Type of account (401k, IRA, Roth IRA, etc.)
 - Account Number: The COMPLETE account number with all digits. Remove any spaces, dashes, or other separators from the account number.
 - Additional fields like: total balance, vested balance, employer, contribution rate
+
+Based on the data extracted from the scanned document, match the right Account/Policy Type and don't leave it blank.
 
 Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
     fields: ['provider_name', 'account_type', 'account_number', 'total_balance', 'vested_balance', 'employer']
