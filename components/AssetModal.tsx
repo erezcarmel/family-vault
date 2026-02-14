@@ -674,7 +674,7 @@ export default function AssetModal({ isOpen, onClose, onSave, asset, subCategori
               )}
               {category === 'money_accounts' && (
                 <p className="text-xs text-blue-600 mt-2 font-medium">
-                  Based on the data extracted from the scanned document, match the right Account/Policy Type and don't leave it blank
+                  Based on the data extracted from the scanned document, match the right Account/Policy Type and don&apos;t leave it blank
                 </p>
               )}
             </div>
