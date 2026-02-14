@@ -31,7 +31,7 @@ const navigationItems = [
 ]
 
 const assetItems = [
-  { href: '/dashboard/money-accounts', icon: faDollarSign, label: 'Money Accounts', category: 'money_accounts' },
+  { href: '/dashboard/money-accounts', icon: faDollarSign, label: 'Money', category: 'money_accounts' },
   { href: '/dashboard/insurance', icon: faShieldAlt, label: 'Insurance', category: 'insurance' },
   { href: '/dashboard/liabilities', icon: faHandHoldingDollar, label: 'Liabilities', category: 'liabilities' },
   { href: '/dashboard/healthcare', icon: faHeartPulse, label: 'Healthcare', category: 'healthcare_records' },
