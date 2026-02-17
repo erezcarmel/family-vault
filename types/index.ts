@@ -79,6 +79,7 @@ export type AssetType =
   | 'life_insurance'
   | 'home_insurance'
   | 'health_insurance'
+  | 'car_insurance'
   | 'mortgage'
   | 'loans'
   | 'email_accounts'

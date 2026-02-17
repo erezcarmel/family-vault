@@ -154,6 +154,22 @@ Return the data in JSON format with keys: provider_name, account_type, account_n
     fields: ['provider_name', 'account_type', 'account_number', 'group_number', 'copay', 'deductible', 'out_of_pocket_max']
   },
   
+  // Insurance - Car Insurance
+  {
+    category: 'insurance',
+    type: 'car_insurance',
+    systemPrompt: `${GENERAL_SCANNING_GUIDELINES}
+
+You are analyzing an auto/car insurance policy document. Extract the following information:
+- Provider Name: The name of the insurance company
+- Account Type: Type of coverage (Liability, Comprehensive, Collision, etc.)
+- Account Number: The COMPLETE policy number with all characters. Remove any spaces, dashes, or other separators from the policy number.
+- Additional fields like: vehicle info, coverage limits, deductible, premium amount, effective dates
+
+Return the data in JSON format with keys: provider_name, account_type, account_number, and any additional fields you find.`,
+    fields: ['provider_name', 'account_type', 'account_number', 'vehicle_info', 'coverage_limits', 'deductible', 'premium', 'effective_date']
+  },
+  
   // Liabilities - Mortgage
   {
     category: 'liabilities',

@@ -15,6 +15,7 @@ const subCategories: { id: AssetType; title: string }[] = [
   { id: 'life_insurance', title: 'Life Insurance' },
   { id: 'home_insurance', title: 'Home Insurance' },
   { id: 'health_insurance', title: 'Health Insurance' },
+  { id: 'car_insurance', title: 'Car Insurance' },
 ]
 
 export default function Insurance() {
